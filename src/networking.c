@@ -73,18 +73,17 @@ int listMatchObjects(void *a, void *b) {
  * 创建一个新客户端
  */
 redisClient *createClient(int fd) {
-
     // 分配空间
     redisClient *c = zmalloc(sizeof(redisClient));
 
     /* passing -1 as fd it is possible to create a non connected client.
      * This is useful since all the Redis commands needs to be executed
      * in the context of a client. When commands are executed in other
-     * contexts (for instance a Lua script) we need a non connected client. */
-    // 当 fd 不为 -1 时，创建带网络连接的客户端
-    // 如果 fd 为 -1 ，那么创建无网络连接的伪客户端
-    // 因为 Redis 的命令必须在客户端的上下文中使用，所以在执行 Lua 环境中的命令时
-    // 需要用到这种伪终端
+     * contexts (for instance a Lua script) we need a non connected client.
+     * 当 fd 不为 -1 时，创建带网络连接的客户端
+     * 如果 fd 为 -1 ，那么创建无网络连接的伪客户端
+     * 因为 Redis 的命令必须在客户端的上下文中使用，所以在执行 Lua 环境中的命令时需要用到这种伪终端
+     * */
     if (fd != -1) {
         // 非阻塞
         anetNonBlock(NULL,fd);
@@ -749,8 +748,8 @@ void copyClientOutputBuffer(redisClient *dst, redisClient *src) {
  * TCP 连接 accept 处理器
  */
 #define MAX_ACCEPTS_PER_CALL 1000
-static void acceptCommonHandler(int fd, int flags) {
 
+static void acceptCommonHandler(int fd, int flags) {
     // 创建客户端
     redisClient *c;
     if ((c = createClient(fd)) == NULL) {
@@ -809,7 +808,7 @@ void acceptTcpHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
         }
         redisLog(REDIS_VERBOSE,"Accepted %s:%d", cip, cport);
         // 为客户端创建客户端状态（redisClient）
-        acceptCommonHandler(cfd,0);
+        acceptCommonHandler(cfd, 0);
     }
 }
 
@@ -833,7 +832,7 @@ void acceptUnixHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
         }
         redisLog(REDIS_VERBOSE,"Accepted connection to %s", server.unixsocket);
         // 为本地客户端创建客户端状态
-        acceptCommonHandler(cfd,REDIS_UNIX_SOCKET);
+        acceptCommonHandler(cfd, REDIS_UNIX_SOCKET);
     }
 }
 

@@ -90,7 +90,6 @@ typedef void aeBeforeSleepProc(struct aeEventLoop *eventLoop);
  * 文件事件结构
  */
 typedef struct aeFileEvent {
-
     // 监听事件类型掩码，
     // 值可以是 AE_READABLE 或 AE_WRITABLE ，
     // 或者 AE_READABLE | AE_WRITABLE

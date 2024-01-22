@@ -167,9 +167,7 @@ void aeStop(aeEventLoop *eventLoop) {
  * 根据 mask 参数的值，监听 fd 文件的状态，
  * 当 fd 可用时，执行 proc 函数
  */
-int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
-        aeFileProc *proc, void *clientData)
-{
+int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask, aeFileProc *proc, void *clientData) {
     if (fd >= eventLoop->setsize) {
         errno = ERANGE;
         return AE_ERR;
@@ -538,7 +536,6 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
             if (tvp->tv_sec < 0) tvp->tv_sec = 0;
             if (tvp->tv_usec < 0) tvp->tv_usec = 0;
         } else {
-            
             // 执行到这一步，说明没有时间事件
             // 那么根据 AE_DONT_WAIT 是否设置来决定是否阻塞，以及阻塞的时间长度
 
@@ -622,11 +619,9 @@ int aeWait(int fd, int mask, long long milliseconds) {
  * 事件处理器的主循环
  */
 void aeMain(aeEventLoop *eventLoop) {
-
     eventLoop->stop = 0;
 
     while (!eventLoop->stop) {
-
         // 如果有需要在事件处理前执行的函数，那么运行它
         if (eventLoop->beforesleep != NULL)
             eventLoop->beforesleep(eventLoop);

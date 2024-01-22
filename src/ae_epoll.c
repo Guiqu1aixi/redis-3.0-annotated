@@ -36,10 +36,10 @@
  */
 typedef struct aeApiState {
 
-    // epoll_event 实例描述符
+    /* epoll 实例描述符 */
     int epfd;
 
-    // 事件槽
+    /* 事件槽 */ 
     struct epoll_event *events;
 
 } aeApiState;
@@ -54,7 +54,7 @@ static int aeApiCreate(aeEventLoop *eventLoop) {
     if (!state) return -1;
 
     // 初始化事件槽空间
-    state->events = zmalloc(sizeof(struct epoll_event)*eventLoop->setsize);
+    state->events = zmalloc(sizeof(struct epoll_event) * eventLoop->setsize);
     if (!state->events) {
         zfree(state);
         return -1;
@@ -96,6 +96,7 @@ static void aeApiFree(aeEventLoop *eventLoop) {
 
 /*
  * 关联给定事件到 fd
+ * @see aeCreateFileEvent
  */
 static int aeApiAddEvent(aeEventLoop *eventLoop, int fd, int mask) {
     aeApiState *state = eventLoop->apidata;
@@ -108,10 +109,9 @@ static int aeApiAddEvent(aeEventLoop *eventLoop, int fd, int mask) {
      *
      * 如果已经关联了某个/某些事件，那么这是一个 MOD 操作。
      */
-    int op = eventLoop->events[fd].mask == AE_NONE ?
-            EPOLL_CTL_ADD : EPOLL_CTL_MOD;
+    int op = eventLoop->events[fd].mask == AE_NONE ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
 
-    // 注册事件到 epoll
+    /* 注册事件到 epoll, 注册可读可写事件 */ 
     ee.events = 0;
     mask |= eventLoop->events[fd].mask; /* Merge old events */
     if (mask & AE_READABLE) ee.events |= EPOLLIN;
@@ -119,7 +119,7 @@ static int aeApiAddEvent(aeEventLoop *eventLoop, int fd, int mask) {
     ee.data.u64 = 0; /* avoid valgrind warning */
     ee.data.fd = fd;
 
-    if (epoll_ctl(state->epfd,op,fd,&ee) == -1) return -1;
+    if (epoll_ctl(state->epfd, op, fd, &ee) == -1) return -1;
 
     return 0;
 }
@@ -155,8 +155,8 @@ static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
     int retval, numevents = 0;
 
     // 等待时间
-    retval = epoll_wait(state->epfd,state->events,eventLoop->setsize,
-            tvp ? (tvp->tv_sec*1000 + tvp->tv_usec/1000) : -1);
+    retval = epoll_wait(state->epfd, state->events, eventLoop->setsize,
+            tvp ? (tvp->tv_sec * 1000 + tvp->tv_usec / 1000) : -1);
 
     // 有至少一个事件就绪？
     if (retval > 0) {
@@ -167,7 +167,7 @@ static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
         numevents = retval;
         for (j = 0; j < numevents; j++) {
             int mask = 0;
-            struct epoll_event *e = state->events+j;
+            struct epoll_event *e = state->events + j;
 
             if (e->events & EPOLLIN) mask |= AE_READABLE;
             if (e->events & EPOLLOUT) mask |= AE_WRITABLE;
