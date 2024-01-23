@@ -547,7 +547,7 @@ typedef struct blockingState {
  * also called ready_keys in every structure representing a Redis database,
  * where we make sure to remember if a given key was already added in the
  * server.ready_keys list. */
-// 记录解除了客户端的阻塞状态的键，以及键所在的数据库。
+// 记录解除了客户端的阻塞状态的键，以及键所在的数据库
 typedef struct readyList {
     redisDb *db;
     robj *key;
@@ -556,9 +556,8 @@ typedef struct readyList {
 /* With multiplexing we need to take per-client state.
  * Clients are taken in a liked list.
  *
- * 因为 I/O 复用的缘故，需要为每个客户端维持一个状态。
- *
- * 多个客户端状态被服务器用链表连接起来。
+ * 因为 I/O 复用的缘故，需要为每个客户端维持一个状态
+ * 多个客户端状态被服务器用链表连接起来
  */
 typedef struct redisClient {
 
@@ -1371,6 +1370,7 @@ struct redisCommand {
     // microseconds 记录了命令执行耗费的总毫微秒数
     // calls 是命令被执行的总次数
     long long microseconds, calls;
+
 };
 
 struct redisFunctionSym {
