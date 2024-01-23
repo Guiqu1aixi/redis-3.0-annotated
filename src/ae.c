@@ -103,6 +103,7 @@ err:
         zfree(eventLoop->fired);
         zfree(eventLoop);
     }
+    
     return NULL;
 }
 
@@ -175,22 +176,22 @@ int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask, aeFileProc *proc
 
     if (fd >= eventLoop->setsize) return AE_ERR;
 
-    // 取出文件事件结构
+    /* 取出文件事件结构 */
     aeFileEvent *fe = &eventLoop->events[fd];
 
-    // 监听指定 fd 的指定事件
+    /* 监听指定 fd 的指定事件 */ 
     if (aeApiAddEvent(eventLoop, fd, mask) == -1)
         return AE_ERR;
 
-    // 设置文件事件类型，以及事件的处理器
+    /* 设置文件事件类型，以及事件的处理器 */ 
     fe->mask |= mask;
     if (mask & AE_READABLE) fe->rfileProc = proc;
     if (mask & AE_WRITABLE) fe->wfileProc = proc;
 
-    // 私有数据
+    /* 私有数据 */
     fe->clientData = clientData;
 
-    // 如果有需要，更新事件处理器的最大 fd
+    /* 如果有需要，更新事件处理器的最大 fd */
     if (fd > eventLoop->maxfd)
         eventLoop->maxfd = fd;
 

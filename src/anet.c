@@ -194,8 +194,7 @@ int anetTcpKeepAlive(char *err, int fd)
  * that are actually already IPv4 or IPv6 addresses. This turns the function
  * into a validating / normalizing function. */
 // 解释 host 的地址，并保存到 ipbuf 中
-int anetGenericResolve(char *err, char *host, char *ipbuf, size_t ipbuf_len,
-                       int flags)
+int anetGenericResolve(char *err, char *host, char *ipbuf, size_t ipbuf_len, int flags)
 {
     struct addrinfo hints, *info;
     int rv;
@@ -445,6 +444,7 @@ static int anetListen(char *err, int s, struct sockaddr *sa, socklen_t len, int 
         close(s);
         return ANET_ERR;
     }
+
     return ANET_OK;
 }
 
@@ -458,8 +458,7 @@ static int anetV6Only(char *err, int s) {
     return ANET_OK;
 }
 
-static int _anetTcpServer(char *err, int port, char *bindaddr, int af, int backlog)
-{
+static int _anetTcpServer(char *err, int port, char *bindaddr, int af, int backlog) {
     int s, rv;
     char _port[6];  /* strlen("65535") */
     struct addrinfo hints, *servinfo, *p;
@@ -470,7 +469,7 @@ static int _anetTcpServer(char *err, int port, char *bindaddr, int af, int backl
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;    /* No effect if bindaddr != NULL */
 
-    if ((rv = getaddrinfo(bindaddr,_port,&hints,&servinfo)) != 0) {
+    if ((rv = getaddrinfo(bindaddr, _port, &hints, &servinfo)) != 0) {
         anetSetError(err, "%s", gai_strerror(rv));
         return ANET_ERR;
     }
@@ -479,7 +478,7 @@ static int _anetTcpServer(char *err, int port, char *bindaddr, int af, int backl
             continue;
 
         if (af == AF_INET6 && anetV6Only(err,s) == ANET_ERR) goto error;
-        if (anetSetReuseAddr(err,s) == ANET_ERR) goto error;
+        if (anetSetReuseAddr(err, s) == ANET_ERR) goto error;
         if (anetListen(err, s, p->ai_addr, p->ai_addrlen, backlog) == ANET_ERR) goto error;
         goto end;
     }
@@ -495,21 +494,18 @@ end:
     return s;
 }
 
-int anetTcpServer(char *err, int port, char *bindaddr, int backlog)
-{
+int anetTcpServer(char *err, int port, char *bindaddr, int backlog) {
     return _anetTcpServer(err, port, bindaddr, AF_INET, backlog);
 }
 
-int anetTcp6Server(char *err, int port, char *bindaddr, int backlog)
-{
+int anetTcp6Server(char *err, int port, char *bindaddr, int backlog) {
     return _anetTcpServer(err, port, bindaddr, AF_INET6, backlog);
 }
 
 /*
  * 创建一个本地连接用的服务器监听套接字
  */
-int anetUnixServer(char *err, char *path, mode_t perm, int backlog)
-{
+int anetUnixServer(char *err, char *path, mode_t perm, int backlog) {
     int s;
     struct sockaddr_un sa;
 
@@ -555,13 +551,14 @@ int anetTcpAccept(char *err, int s, char *ip, size_t ip_len, int *port) {
 
     if (sa.ss_family == AF_INET) {
         struct sockaddr_in *s = (struct sockaddr_in *)&sa;
-        if (ip) inet_ntop(AF_INET,(void*)&(s->sin_addr),ip,ip_len);
+        if (ip) inet_ntop(AF_INET, (void*)&(s->sin_addr), ip, ip_len);
         if (port) *port = ntohs(s->sin_port);
     } else {
         struct sockaddr_in6 *s = (struct sockaddr_in6 *)&sa;
-        if (ip) inet_ntop(AF_INET6,(void*)&(s->sin6_addr),ip,ip_len);
+        if (ip) inet_ntop(AF_INET6,(void*)&(s->sin6_addr), ip, ip_len);
         if (port) *port = ntohs(s->sin6_port);
     }
+
     return fd;
 }
 
@@ -600,6 +597,7 @@ int anetPeerToString(int fd, char *ip, size_t ip_len, int *port) {
         if (ip) inet_ntop(AF_INET6,(void*)&(s->sin6_addr),ip,ip_len);
         if (port) *port = ntohs(s->sin6_port);
     }
+
     return 0;
 }
 
@@ -625,5 +623,6 @@ int anetSockName(int fd, char *ip, size_t ip_len, int *port) {
         if (ip) inet_ntop(AF_INET6,(void*)&(s->sin6_addr),ip,ip_len);
         if (port) *port = ntohs(s->sin6_port);
     }
+
     return 0;
 }

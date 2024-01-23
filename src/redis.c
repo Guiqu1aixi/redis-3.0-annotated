@@ -2149,22 +2149,20 @@ void initServer() {
         exit(1);
     }
 
-    /* Create an event handler for accepting new connections in TCP and Unix
-     * domain sockets. */
-    // 为 TCP 连接关联连接应答（accept）处理器
-    // 用于接受并应答客户端的 connect() 调用
+    /* Create an event handler for accepting new connections in TCP and Unix domain sockets. */
+    /* 为 TCP 连接关联连接应答（accept）处理器, 用于接受并应答客户端的 connect() 调用*/ 
     for (j = 0; j < server.ipfd_count; j++) {
         if (aeCreateFileEvent(server.el, server.ipfd[j], AE_READABLE, acceptTcpHandler, NULL) == AE_ERR) {
             redisPanic("Unrecoverable error creating server.ipfd file event.");
         }
     }
 
-    // 为本地套接字关联应答处理器
+    /* 为本地套接字关联应答处理器 */
     if (server.sofd > 0 && aeCreateFileEvent(server.el, server.sofd, AE_READABLE, acceptUnixHandler, NULL) == AE_ERR) 
         redisPanic("Unrecoverable error creating server.sofd file event.");
 
     /* Open the AOF file if needed. */
-    // 如果 AOF 持久化功能已经打开，那么打开或创建一个 AOF 文件
+    /* 如果 AOF 持久化功能已经打开，那么打开或创建一个 AOF 文件 */
     if (server.aof_state == REDIS_AOF_ON) {
         server.aof_fd = open(server.aof_filename,
                                O_WRONLY|O_APPEND|O_CREAT,0644);
