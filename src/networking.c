@@ -73,7 +73,7 @@ int listMatchObjects(void *a, void *b) {
  * 创建一个新客户端
  */
 redisClient *createClient(int fd) {
-    // 分配空间
+    /* 分配空间 */
     redisClient *c = zmalloc(sizeof(redisClient));
 
     /* passing -1 as fd it is possible to create a non connected client.
@@ -85,82 +85,80 @@ redisClient *createClient(int fd) {
      * 因为 Redis 的命令必须在客户端的上下文中使用，所以在执行 Lua 环境中的命令时需要用到这种伪终端
      * */
     if (fd != -1) {
-        // 非阻塞
+        /* 非阻塞 */ 
         anetNonBlock(NULL,fd);
-        // 禁用 Nagle 算法
+        /* 禁用 Nagle 算法 */
         anetEnableTcpNoDelay(NULL,fd);
-        // 设置 keep alive
+        /* 设置 keep alive */ 
         if (server.tcpkeepalive)
-            anetKeepAlive(NULL,fd,server.tcpkeepalive);
-        // 绑定读事件到事件 loop （开始接收命令请求）
-        if (aeCreateFileEvent(server.el,fd,AE_READABLE,
-            readQueryFromClient, c) == AE_ERR)
-        {
+            anetKeepAlive(NULL, fd, server.tcpkeepalive);
+        /* 绑定读事件到事件 loop （开始接收命令请求） */
+        if (aeCreateFileEvent(server.el, fd, AE_READABLE, readQueryFromClient, c) == AE_ERR) {
             close(fd);
             zfree(c);
             return NULL;
         }
     }
 
-    // 初始化各个属性
+    /* 初始化各个属性 */ 
 
-    // 默认数据库
-    selectDb(c,0);
-    // 套接字
+    /* 默认数据库 */
+    selectDb(c, 0);
+    /* 套接字 */ 
     c->fd = fd;
-    // 名字
+    /* 名字 */ 
     c->name = NULL;
-    // 回复缓冲区的偏移量
+    /* 回复缓冲区的偏移量 */
     c->bufpos = 0;
-    // 查询缓冲区
+    /* 查询缓冲区 */
     c->querybuf = sdsempty();
-    // 查询缓冲区峰值
+    /* 查询缓冲区峰值 */
     c->querybuf_peak = 0;
-    // 命令请求的类型
+    /* 命令请求的类型 */ 
     c->reqtype = 0;
-    // 命令参数数量
+    /* 命令参数数量 */ 
     c->argc = 0;
-    // 命令参数
+    /* 命令参数 */
     c->argv = NULL;
-    // 当前执行的命令和最近一次执行的命令
+    /* 当前执行的命令和最近一次执行的命令 */ 
     c->cmd = c->lastcmd = NULL;
-    // 查询缓冲区中未读入的命令内容数量
+    /* 查询缓冲区中未读入的命令内容数量 */ 
     c->multibulklen = 0;
-    // 读入的参数的长度
+    /* 读入的参数的长度 */ 
     c->bulklen = -1;
-    // 已发送字节数
+    /* 已发送字节数 */ 
     c->sentlen = 0;
-    // 状态 FLAG
+    /* 状态 FLAG */
     c->flags = 0;
-    // 创建时间和最后一次互动时间
+    /* 创建时间和最后一次互动时间 */
     c->ctime = c->lastinteraction = server.unixtime;
-    // 认证状态
+    /*  认证状态 */
     c->authenticated = 0;
-    // 复制状态
+    /* 复制状态 */
     c->replstate = REDIS_REPL_NONE;
-    // 复制偏移量
+    /* 复制偏移量 */
     c->reploff = 0;
-    // 通过 ACK 命令接收到的偏移量
+    /* 通过 ACK 命令接收到的偏移量 */
     c->repl_ack_off = 0;
-    // 通过 AKC 命令接收到偏移量的时间
+    /* 通过 AKC 命令接收到偏移量的时间 */
     c->repl_ack_time = 0;
-    // 客户端为从服务器时使用，记录了从服务器所使用的端口号
+    /* 客户端为从服务器时使用，记录了从服务器所使用的端口号 */
     c->slave_listening_port = 0;
-    // 回复链表
+    /* 回复链表 */ 
     c->reply = listCreate();
-    // 回复链表的字节量
+    /*  回复链表的字节量 */
     c->reply_bytes = 0;
-    // 回复缓冲区大小达到软限制的时间
+    /* 回复缓冲区大小达到软限制的时间 */
     c->obuf_soft_limit_reached_time = 0;
-    // 回复链表的释放和复制函数
-    listSetFreeMethod(c->reply,decrRefCountVoid);
-    listSetDupMethod(c->reply,dupClientReplyValue);
-    // 阻塞类型
+    /* 回复链表的释放和复制函数 */
+    listSetFreeMethod(c->reply, decrRefCountVoid);
+    listSetDupMethod(c->reply, dupClientReplyValue);
+    /* 阻塞类型 */
     c->btype = REDIS_BLOCKED_NONE;
-    // 阻塞超时
+    /* 阻塞超时 */
     c->bpop.timeout = 0;
-    // 造成客户端阻塞的列表键
-    c->bpop.keys = dictCreate(&setDictType,NULL);
+    /* 造成客户端阻塞的列表键 */
+    c->bpop.keys = dictCreate(&setDictType, NULL);
     // 在解除阻塞时将元素推入到 target 指定的键中
     // BRPOPLPUSH 命令时使用
     c->bpop.target = NULL;
@@ -170,13 +168,13 @@ redisClient *createClient(int fd) {
     // 进行事务时监视的键
     c->watched_keys = listCreate();
     // 订阅的频道和模式
-    c->pubsub_channels = dictCreate(&setDictType,NULL);
+    c->pubsub_channels = dictCreate(&setDictType, NULL);
     c->pubsub_patterns = listCreate();
     c->peerid = NULL;
-    listSetFreeMethod(c->pubsub_patterns,decrRefCountVoid);
-    listSetMatchMethod(c->pubsub_patterns,listMatchObjects);
+    listSetFreeMethod(c->pubsub_patterns, decrRefCountVoid);
+    listSetMatchMethod(c->pubsub_patterns, listMatchObjects);
     // 如果不是伪客户端，那么添加到服务器的客户端链表中
-    if (fd != -1) listAddNodeTail(server.clients,c);
+    if (fd != -1) listAddNodeTail(server.clients, c);
     // 初始化客户端的事务状态
     initClientMultiState(c);
 
