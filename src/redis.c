@@ -1994,33 +1994,30 @@ int listenToPort(int port, int *fds, int *count) {
                 anetNonBlock(NULL,fds[*count]);
                 (*count)++;
             }
-            fds[*count] = anetTcpServer(server.neterr,port,NULL,
-                server.tcp_backlog);
+            fds[*count] = anetTcpServer(server.neterr, port, NULL, server.tcp_backlog);
             if (fds[*count] != ANET_ERR) {
-                anetNonBlock(NULL,fds[*count]);
+                anetNonBlock(NULL, fds[*count]);
                 (*count)++;
             }
             /* Exit the loop if we were able to bind * on IPv4 or IPv6,
              * otherwise fds[*count] will be ANET_ERR and we'll print an
              * error and return to the caller with an error. */
             if (*count) break;
-        } else if (strchr(server.bindaddr[j],':')) {
+        } else if (strchr(server.bindaddr[j], ':')) {
             /* Bind IPv6 address. */
-            fds[*count] = anetTcp6Server(server.neterr,port,server.bindaddr[j],
-                server.tcp_backlog);
+            fds[*count] = anetTcp6Server(server.neterr, port, server.bindaddr[j], server.tcp_backlog);
         } else {
             /* Bind IPv4 address. */
-            fds[*count] = anetTcpServer(server.neterr,port,server.bindaddr[j],
-                server.tcp_backlog);
+            fds[*count] = anetTcpServer(server.neterr, port, server.bindaddr[j], server.tcp_backlog);
         }
         if (fds[*count] == ANET_ERR) {
             redisLog(REDIS_WARNING,
                 "Creating Server TCP listening socket %s:%d: %s",
-                server.bindaddr[j] ? server.bindaddr[j] : "*",
-                port, server.neterr);
+                server.bindaddr[j] ? server.bindaddr[j] : "*", port, server.neterr
+            );
             return REDIS_ERR;
         }
-        anetNonBlock(NULL,fds[*count]);
+        anetNonBlock(NULL, fds[*count]);
         (*count)++;
     }
     return REDIS_OK;
@@ -2057,8 +2054,7 @@ void initServer() {
 
     // 设置 syslog
     if (server.syslog_enabled) {
-        openlog(server.syslog_ident, LOG_PID | LOG_NDELAY | LOG_NOWAIT,
-            server.syslog_facility);
+        openlog(server.syslog_ident, LOG_PID | LOG_NDELAY | LOG_NOWAIT, server.syslog_facility);
     }
 
     // 初始化并创建数据结构
@@ -2077,13 +2073,13 @@ void initServer() {
     // 创建共享对象
     createSharedObjects();
     adjustOpenFilesLimit();
-    server.el = aeCreateEventLoop(server.maxclients+REDIS_EVENTLOOP_FDSET_INCR);
-    server.db = zmalloc(sizeof(redisDb)*server.dbnum);
+    server.el = aeCreateEventLoop(server.maxclients + REDIS_EVENTLOOP_FDSET_INCR);
+    server.db = zmalloc(sizeof(redisDb) * server.dbnum);
 
     /* Open the TCP listening socket for the user commands. */
     // 打开 TCP 监听端口，用于等待客户端的命令请求
     if (server.port != 0 &&
-        listenToPort(server.port,server.ipfd,&server.ipfd_count) == REDIS_ERR)
+        listenToPort(server.port, server.ipfd, &server.ipfd_count) == REDIS_ERR)
         exit(1);
 
     /* Open the listening Unix domain socket. */
@@ -2096,7 +2092,7 @@ void initServer() {
             redisLog(REDIS_WARNING, "Opening socket: %s", server.neterr);
             exit(1);
         }
-        anetNonBlock(NULL,server.sofd);
+        anetNonBlock(NULL, server.sofd);
     }
 
     /* Abort if there are no listening sockets at all. */
@@ -2106,19 +2102,19 @@ void initServer() {
     }
 
     /* Create the Redis databases, and initialize other internal state. */
-    // 创建并初始化数据库结构
+    /* 创建并初始化数据库结构，默认16 */ 
     for (j = 0; j < server.dbnum; j++) {
-        server.db[j].dict = dictCreate(&dbDictType,NULL);
-        server.db[j].expires = dictCreate(&keyptrDictType,NULL);
-        server.db[j].blocking_keys = dictCreate(&keylistDictType,NULL);
-        server.db[j].ready_keys = dictCreate(&setDictType,NULL);
-        server.db[j].watched_keys = dictCreate(&keylistDictType,NULL);
+        server.db[j].dict = dictCreate(&dbDictType, NULL);
+        server.db[j].expires = dictCreate(&keyptrDictType, NULL);
+        server.db[j].blocking_keys = dictCreate(&keylistDictType, NULL);
+        server.db[j].ready_keys = dictCreate(&setDictType, NULL);
+        server.db[j].watched_keys = dictCreate(&keylistDictType, NULL);
         server.db[j].eviction_pool = evictionPoolAlloc();
         server.db[j].id = j;
         server.db[j].avg_ttl = 0;
     }
 
-    // 创建 PUBSUB 相关结构
+    /* 创建 PUBSUB 相关结构 */ 
     server.pubsub_channels = dictCreate(&keylistDictType,NULL);
     server.pubsub_patterns = listCreate();
     listSetFreeMethod(server.pubsub_patterns,freePubsubPattern);
@@ -2147,7 +2143,7 @@ void initServer() {
 
     /* Create the serverCron() time event, that's our main way to process
      * background operations. */
-    // 为 serverCron() 创建时间事件
+    /* 为 serverCron() 创建时间事件 */ 
     if(aeCreateTimeEvent(server.el, 1, serverCron, NULL, NULL) == AE_ERR) {
         redisPanic("Can't create the serverCron time event.");
         exit(1);
@@ -2158,17 +2154,14 @@ void initServer() {
     // 为 TCP 连接关联连接应答（accept）处理器
     // 用于接受并应答客户端的 connect() 调用
     for (j = 0; j < server.ipfd_count; j++) {
-        if (aeCreateFileEvent(server.el, server.ipfd[j], AE_READABLE,
-            acceptTcpHandler,NULL) == AE_ERR)
-            {
-                redisPanic(
-                    "Unrecoverable error creating server.ipfd file event.");
-            }
+        if (aeCreateFileEvent(server.el, server.ipfd[j], AE_READABLE, acceptTcpHandler, NULL) == AE_ERR) {
+            redisPanic("Unrecoverable error creating server.ipfd file event.");
+        }
     }
 
     // 为本地套接字关联应答处理器
-    if (server.sofd > 0 && aeCreateFileEvent(server.el,server.sofd,AE_READABLE,
-        acceptUnixHandler,NULL) == AE_ERR) redisPanic("Unrecoverable error creating server.sofd file event.");
+    if (server.sofd > 0 && aeCreateFileEvent(server.el, server.sofd, AE_READABLE, acceptUnixHandler, NULL) == AE_ERR) 
+        redisPanic("Unrecoverable error creating server.sofd file event.");
 
     /* Open the AOF file if needed. */
     // 如果 AOF 持久化功能已经打开，那么打开或创建一个 AOF 文件

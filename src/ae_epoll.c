@@ -48,7 +48,6 @@ typedef struct aeApiState {
  * 创建一个新的 epoll 实例，并将它赋值给 eventLoop
  */
 static int aeApiCreate(aeEventLoop *eventLoop) {
-
     aeApiState *state = zmalloc(sizeof(aeApiState));
 
     if (!state) return -1;
@@ -154,16 +153,15 @@ static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
     aeApiState *state = eventLoop->apidata;
     int retval, numevents = 0;
 
-    // 等待时间
+    /* 等待事件 */
     retval = epoll_wait(state->epfd, state->events, eventLoop->setsize,
             tvp ? (tvp->tv_sec * 1000 + tvp->tv_usec / 1000) : -1);
 
-    // 有至少一个事件就绪？
+    /* 有至少一个事件就绪 */ 
     if (retval > 0) {
         int j;
 
-        // 为已就绪事件设置相应的模式
-        // 并加入到 eventLoop 的 fired 数组中
+        /* 为已就绪事件设置相应的模式, 并加入到 eventLoop 的 fired 数组中 */ 
         numevents = retval;
         for (j = 0; j < numevents; j++) {
             int mask = 0;

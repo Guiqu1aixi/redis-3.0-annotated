@@ -86,9 +86,9 @@ redisClient *createClient(int fd) {
      * */
     if (fd != -1) {
         /* 非阻塞 */ 
-        anetNonBlock(NULL,fd);
+        anetNonBlock(NULL, fd);
         /* 禁用 Nagle 算法 */
-        anetEnableTcpNoDelay(NULL,fd);
+        anetEnableTcpNoDelay(NULL, fd);
         /* 设置 keep alive */ 
         if (server.tcpkeepalive)
             anetKeepAlive(NULL, fd, server.tcpkeepalive);
@@ -159,26 +159,25 @@ redisClient *createClient(int fd) {
     c->bpop.timeout = 0;
     /* 造成客户端阻塞的列表键 */
     c->bpop.keys = dictCreate(&setDictType, NULL);
-    // 在解除阻塞时将元素推入到 target 指定的键中
-    // BRPOPLPUSH 命令时使用
+    /* 在解除阻塞时将元素推入到 target 指定的键中 */
+    /* BRPOPLPUSH 命令时使用 */
     c->bpop.target = NULL;
     c->bpop.numreplicas = 0;
     c->bpop.reploffset = 0;
     c->woff = 0;
-    // 进行事务时监视的键
+    /* 进行事务时监视的键 */
     c->watched_keys = listCreate();
-    // 订阅的频道和模式
+    /* 订阅的频道和模式 */
     c->pubsub_channels = dictCreate(&setDictType, NULL);
     c->pubsub_patterns = listCreate();
     c->peerid = NULL;
     listSetFreeMethod(c->pubsub_patterns, decrRefCountVoid);
     listSetMatchMethod(c->pubsub_patterns, listMatchObjects);
-    // 如果不是伪客户端，那么添加到服务器的客户端链表中
+    /* 如果不是伪客户端，那么添加到服务器的客户端链表中 */
     if (fd != -1) listAddNodeTail(server.clients, c);
-    // 初始化客户端的事务状态
+    /* 初始化客户端的事务状态 */
     initClientMultiState(c);
 
-    // 返回客户端
     return c;
 }
 
@@ -491,7 +490,7 @@ void addReplyErrorLength(redisClient *c, char *s, size_t len) {
  * 例子 -ERR unknown command 'foobar'
  */
 void addReplyError(redisClient *c, char *err) {
-    addReplyErrorLength(c,err,strlen(err));
+    addReplyErrorLength(c, err, strlen(err));
 }
 
 void addReplyErrorFormat(redisClient *c, const char *fmt, ...) {
@@ -748,12 +747,10 @@ void copyClientOutputBuffer(redisClient *dst, redisClient *src) {
 #define MAX_ACCEPTS_PER_CALL 1000
 
 static void acceptCommonHandler(int fd, int flags) {
-    // 创建客户端
+    /* 创建客户端 */
     redisClient *c;
     if ((c = createClient(fd)) == NULL) {
-        redisLog(REDIS_WARNING,
-            "Error registering fd event for the new client: %s (fd=%d)",
-            strerror(errno),fd);
+        redisLog(REDIS_WARNING, "Error registering fd event for the new client: %s (fd=%d)", strerror(errno), fd);
         close(fd); /* May be already closed, just ignore errors */
         return;
     }
@@ -769,7 +766,7 @@ static void acceptCommonHandler(int fd, int flags) {
         char *err = "-ERR max number of clients reached\r\n";
 
         /* That's a best effort error message, don't check write errors */
-        if (write(c->fd,err,strlen(err)) == -1) {
+        if (write(c->fd, err, strlen(err)) == -1) {
             /* Nothing to do, Just to avoid the warning... */
         }
         // 更新拒绝连接数
@@ -800,11 +797,10 @@ void acceptTcpHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
         cfd = anetTcpAccept(server.neterr, fd, cip, sizeof(cip), &cport);
         if (cfd == ANET_ERR) {
             if (errno != EWOULDBLOCK)
-                redisLog(REDIS_WARNING,
-                    "Accepting client connection: %s", server.neterr);
+                redisLog(REDIS_WARNING, "Accepting client connection: %s", server.neterr);
             return;
         }
-        redisLog(REDIS_VERBOSE,"Accepted %s:%d", cip, cport);
+        redisLog(REDIS_VERBOSE, "Accepted %s:%d", cip, cport);
         // 为客户端创建客户端状态（redisClient）
         acceptCommonHandler(cfd, 0);
     }
@@ -1549,10 +1545,10 @@ void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask) {
     REDIS_NOTUSED(el);
     REDIS_NOTUSED(mask);
 
-    // 设置服务器的当前客户端
+    /* 设置服务器的当前客户端 */
     server.current_client = c;
     
-    // 读入长度（默认为 16 MB）
+    /* 读入长度（默认为 16 MB） */ 
     readlen = REDIS_IOBUF_LEN;
 
     /* If this is a multi bulk request, and we are processing a bulk reply
@@ -1560,27 +1556,30 @@ void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask) {
      * buffer contains exactly the SDS string representing the object, even
      * at the risk of requiring more read(2) calls. This way the function
      * processMultiBulkBuffer() can avoid copying buffers to create the
-     * Redis Object representing the argument. */
+     * Redis Object representing the argument. 
+     */
     if (c->reqtype == REDIS_REQ_MULTIBULK && c->multibulklen && c->bulklen != -1
-        && c->bulklen >= REDIS_MBULK_BIG_ARG)
-    {
+        && c->bulklen >= REDIS_MBULK_BIG_ARG
+    ) {
         int remaining = (unsigned)(c->bulklen+2)-sdslen(c->querybuf);
 
         if (remaining < readlen) readlen = remaining;
     }
 
-    // 获取查询缓冲区当前内容的长度
-    // 如果读取出现 short read ，那么可能会有内容滞留在读取缓冲区里面
-    // 这些滞留内容也许不能完整构成一个符合协议的命令，
+    /**
+     * 获取查询缓冲区当前内容的长度
+     * 如果读取出现 short read ，那么可能会有内容滞留在读取缓冲区里面
+     * 这些滞留内容也许不能完整构成一个符合协议的命令
+     */
     qblen = sdslen(c->querybuf);
-    // 如果有需要，更新缓冲区内容长度的峰值（peak）
+    /* 如果有需要，更新缓冲区内容长度的峰值（peak） */
     if (c->querybuf_peak < qblen) c->querybuf_peak = qblen;
-    // 为查询缓冲区分配空间
+    /* 为查询缓冲区分配空间 */ 
     c->querybuf = sdsMakeRoomFor(c->querybuf, readlen);
-    // 读入内容到查询缓存
+    /* 读入内容到查询缓存 */
     nread = read(fd, c->querybuf+qblen, readlen);
 
-    // 读入出错
+    /* 读入出错 */
     if (nread == -1) {
         if (errno == EAGAIN) {
             nread = 0;
@@ -1589,7 +1588,7 @@ void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask) {
             freeClient(c);
             return;
         }
-    // 遇到 EOF
+    /* 遇到 EOF */
     } else if (nread == 0) {
         redisLog(REDIS_VERBOSE, "Client closed connection");
         freeClient(c);
