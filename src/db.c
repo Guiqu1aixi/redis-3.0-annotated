@@ -675,8 +675,7 @@ void scanGenericCommand(redisClient *c, robj *o, unsigned long cursor) {
     /* Object must be NULL (to iterate keys names), or the type of the object
      * must be Set, Sorted Set, or Hash. */
     // 输入类型检查
-    redisAssert(o == NULL || o->type == REDIS_SET || o->type == REDIS_HASH ||
-                o->type == REDIS_ZSET);
+    redisAssert(o == NULL || o->type == REDIS_SET || o->type == REDIS_HASH || o->type == REDIS_ZSET);
 
     /* Set i to the first option argument. The previous one is the cursor. */
     // 设置第一个选项参数的索引位置
@@ -863,8 +862,8 @@ cleanup:
 /* The SCAN command completely relies on scanGenericCommand. */
 void scanCommand(redisClient *c) {
     unsigned long cursor;
-    if (parseScanCursorOrReply(c,c->argv[1],&cursor) == REDIS_ERR) return;
-    scanGenericCommand(c,NULL,cursor);
+    if (parseScanCursorOrReply(c, c->argv[1], &cursor) == REDIS_ERR) return;
+    scanGenericCommand(c, NULL, cursor);
 }
 
 void dbsizeCommand(redisClient *c) {
