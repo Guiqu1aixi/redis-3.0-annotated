@@ -93,9 +93,9 @@ robj *createEmbeddedStringObject(char *ptr, size_t len) {
 #define REDIS_ENCODING_EMBSTR_SIZE_LIMIT 39
 robj *createStringObject(char *ptr, size_t len) {
     if (len <= REDIS_ENCODING_EMBSTR_SIZE_LIMIT)
-        return createEmbeddedStringObject(ptr,len);
+        return createEmbeddedStringObject(ptr, len);
     else
-        return createRawStringObject(ptr,len);
+        return createRawStringObject(ptr, len);
 }
 
 /*
@@ -105,28 +105,24 @@ robj *createStringObject(char *ptr, size_t len) {
  * 也可以是 RAW 编码的、被转换成字符串的 long long 值。
  */
 robj *createStringObjectFromLongLong(long long value) {
-
     robj *o;
 
-    // value 的大小符合 REDIS 共享整数的范围
-    // 那么返回一个共享对象
+    /* value 的大小符合 REDIS 共享整数的范围，那么返回一个共享对象 */
     if (value >= 0 && value < REDIS_SHARED_INTEGERS) {
         incrRefCount(shared.integers[value]);
         o = shared.integers[value];
-
-    // 不符合共享范围，创建一个新的整数对象
     } else {
-        // 值可以用 long 类型保存，
-        // 创建一个 REDIS_ENCODING_INT 编码的字符串对象
+        /**
+         * 不符合共享范围，创建一个新的整数对象
+         * 值可以用 long 类型保存，创建一个 REDIS_ENCODING_INT 编码的字符串对象
+         */ 
         if (value >= LONG_MIN && value <= LONG_MAX) {
             o = createObject(REDIS_STRING, NULL);
             o->encoding = REDIS_ENCODING_INT;
             o->ptr = (void*)((long)value);
-
-        // 值不能用 long 类型保存（long long 类型），将值转换为字符串，
-        // 并创建一个 REDIS_ENCODING_RAW 的字符串对象来保存值
         } else {
-            o = createObject(REDIS_STRING,sdsfromlonglong(value));
+            /* 值不能用 long 类型保存（long long 类型），将值转换为字符串，并创建一个 REDIS_ENCODING_RAW 的字符串对象来保存值 */
+            o = createObject(REDIS_STRING, sdsfromlonglong(value));
         }
     }
 
