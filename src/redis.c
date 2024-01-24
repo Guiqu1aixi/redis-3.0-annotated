@@ -1213,23 +1213,22 @@ void clientsCron(void) {
 
 /* This function handles 'background' operations we are required to do
  * incrementally in Redis databases, such as active key expiring, resizing,
- * rehashing. */
-// 对数据库执行删除过期键，调整大小，以及主动和渐进式 rehash
+ * rehashing.
+ * 对数据库执行删除过期键，调整大小，以及主动和渐进式 rehash
+ * 函数先从数据库中删除过期键，然后再对数据库的大小进行修改
+ */
 void databasesCron(void) {
-
-    // 函数先从数据库中删除过期键，然后再对数据库的大小进行修改
-
-    /* Expire keys by random sampling. Not required for slaves
-     * as master will synthesize DELs for us. */
-    // 如果服务器不是从服务器，那么执行主动过期键清除
+    /* Expire keys by random sampling. Not required for slaves as master will synthesize DELs for us. */
+    /* 如果服务器不是从节点，那么执行主动过期键清除 */
     if (server.active_expire_enabled && server.masterhost == NULL)
-        // 清除模式为 CYCLE_SLOW ，这个模式会尽量多清除过期键
+        /* 清除模式为 CYCLE_SLOW ，这个模式会尽量多清除过期键 */
         activeExpireCycle(ACTIVE_EXPIRE_CYCLE_SLOW);
 
     /* Perform hash tables rehashing if needed, but only if there are no
      * other processes saving the DB on disk. Otherwise rehashing is bad
-     * as will cause a lot of copy-on-write of memory pages. */
-    // 在没有 BGSAVE 或者 BGREWRITEAOF 执行时，对哈希表进行 rehash
+     * as will cause a lot of copy-on-write of memory pages.
+     * 在没有 BGSAVE 或者 BGREWRITEAOF 执行时，对哈希表进行 rehash
+     */
     if (server.rdb_child_pid == -1 && server.aof_child_pid == -1) {
         /* We use global counters so if we stop the computation at a given
          * DB we'll be able to start from the successive in the next
@@ -1239,19 +1238,16 @@ void databasesCron(void) {
         unsigned int dbs_per_call = REDIS_DBCRON_DBS_PER_CALL;
         unsigned int j;
 
-        /* Don't test more DBs than we have. */
-        // 设定要测试的数据库数量
+        /* Don't test more DBs than we have.设定要测试的数据库数量 */
         if (dbs_per_call > server.dbnum) dbs_per_call = server.dbnum;
 
-        /* Resize */
-        // 调整字典的大小
+        /* Resize；调整字典的大小 */
         for (j = 0; j < dbs_per_call; j++) {
             tryResizeHashTables(resize_db % server.dbnum);
             resize_db++;
         }
 
-        /* Rehash */
-        // 对字典进行渐进式 rehash
+        /* Rehash；对字典进行渐进式 rehash */
         if (server.activerehashing) {
             for (j = 0; j < dbs_per_call; j++) {
                 int work_done = incrementallyRehash(rehash_db % server.dbnum);
@@ -1282,8 +1278,7 @@ void updateCachedTime(void) {
  * For instance:
  * 以下是需要异步执行的操作：
  *
- * - Active expired keys collection (it is also performed in a lazy way on
- *   lookup).
+ * - Active expired keys collection (it is also performed in a lazy way on lookup).
  *   主动清除过期键。
  *
  * - Software watchdog.
@@ -1363,17 +1358,15 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
      * not ok doing so inside the signal handler. */
     // 服务器进程收到 SIGTERM 信号，关闭服务器
     if (server.shutdown_asap) {
-
         // 尝试关闭服务器
         if (prepareForShutdown(0) == REDIS_OK) exit(0);
 
         // 如果关闭失败，那么打印 LOG ，并移除关闭标识
-        redisLog(REDIS_WARNING,"SIGTERM received but errors trying to shut down the server, check the logs for more information");
+        redisLog(REDIS_WARNING, "SIGTERM received but errors trying to shut down the server, check the logs for more information");
         server.shutdown_asap = 0;
     }
 
-    /* Show some info about non-empty databases */
-    // 打印数据库的键值对信息
+    /* Show some info about non-empty databases;打印数据库的键值对信息*/
     run_with_period(5000) {
         for (j = 0; j < server.dbnum; j++) {
             long long size, used, vkeys;
@@ -1387,7 +1380,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
 
             // 用 LOG 打印数量
             if (used || vkeys) {
-                redisLog(REDIS_VERBOSE,"DB %d: %lld keys (%lld volatile) in %lld slots HT.",j,used,vkeys,size);
+                redisLog(REDIS_VERBOSE, "DB %d: %lld keys (%lld volatile) in %lld slots HT.", j, used, vkeys, size);
                 /* dictPrintStats(server.dict); */
             }
         }
@@ -1397,11 +1390,13 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     // 如果服务器没有运行在 SENTINEL 模式下，那么打印客户端的连接信息
     if (!server.sentinel_mode) {
         run_with_period(5000) {
-            redisLog(REDIS_VERBOSE,
+            redisLog(
+                REDIS_VERBOSE,
                 "%lu clients connected (%lu slaves), %zu bytes in use",
                 listLength(server.clients)-listLength(server.slaves),
                 listLength(server.slaves),
-                zmalloc_used_memory());
+                zmalloc_used_memory()
+            );
         }
     }
 
@@ -1418,8 +1413,8 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     // 如果 BGSAVE 和 BGREWRITEAOF 都没有在执行
     // 并且有一个 BGREWRITEAOF 在等待，那么执行 BGREWRITEAOF
     if (server.rdb_child_pid == -1 && server.aof_child_pid == -1 &&
-        server.aof_rewrite_scheduled)
-    {
+        server.aof_rewrite_scheduled
+    ) {
         rewriteAppendOnlyFileBackground();
     }
 
@@ -1443,18 +1438,13 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
             // BGREWRITEAOF 执行完毕
             } else if (pid == server.aof_child_pid) {
                 backgroundRewriteDoneHandler(exitcode,bysignal);
-
             } else {
-                redisLog(REDIS_WARNING,
-                    "Warning, detected child with unmatched pid: %ld",
-                    (long)pid);
+                redisLog(REDIS_WARNING, "Warning, detected child with unmatched pid: %ld", (long)pid);
             }
             updateDictResizePolicy();
         }
     } else {
-
-        /* If there is not a background saving/rewrite in progress check if
-         * we have to save/rewrite now */
+        /* If there is not a background saving/rewrite in progress check if we have to save/rewrite now */
         // 既然没有 BGSAVE 或者 BGREWRITEAOF 在执行，那么检查是否需要执行它们
 
         // 遍历所有保存条件，看是否需要执行 BGSAVE 命令
@@ -1468,10 +1458,8 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
             // 检查是否有某个保存条件已经满足了
             if (server.dirty >= sp->changes &&
                 server.unixtime-server.lastsave > sp->seconds &&
-                (server.unixtime-server.lastbgsave_try >
-                 REDIS_BGSAVE_RETRY_DELAY ||
-                 server.lastbgsave_status == REDIS_OK))
-            {
+                (server.unixtime-server.lastbgsave_try > REDIS_BGSAVE_RETRY_DELAY || server.lastbgsave_status == REDIS_OK)
+            ) {
                 redisLog(REDIS_NOTICE,"%d changes in %d seconds. Saving...",
                     sp->changes, (int)sp->seconds);
                 // 执行 BGSAVE
@@ -1482,18 +1470,17 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
 
          /* Trigger an AOF rewrite if needed */
         // 出发 BGREWRITEAOF
-         if (server.rdb_child_pid == -1 &&
+        if (server.rdb_child_pid == -1 &&
              server.aof_child_pid == -1 &&
              server.aof_rewrite_perc &&
              // AOF 文件的当前大小大于执行 BGREWRITEAOF 所需的最小大小
-             server.aof_current_size > server.aof_rewrite_min_size)
-         {
+             server.aof_current_size > server.aof_rewrite_min_size
+        ) {
             // 上一次完成 AOF 写入之后，AOF 文件的大小
-            long long base = server.aof_rewrite_base_size ?
-                            server.aof_rewrite_base_size : 1;
+            long long base = server.aof_rewrite_base_size ? server.aof_rewrite_base_size : 1;
 
             // AOF 文件当前的体积相对于 base 的体积的百分比
-            long long growth = (server.aof_current_size*100/base) - 100;
+            long long growth = (server.aof_current_size * 100 / base) - 100;
 
             // 如果增长体积的百分比超过了 growth ，那么执行 BGREWRITEAOF
             if (growth >= server.aof_rewrite_perc) {
@@ -1553,7 +1540,7 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     // 增加 loop 计数器
     server.cronloops++;
 
-    return 1000/server.hz;
+    return 1000 / server.hz;
 }
 
 /* This function gets called every time Redis is entering the
