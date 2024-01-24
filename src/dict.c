@@ -1401,13 +1401,11 @@ static unsigned long _dictNextPower(unsigned long size)
 /* Returns the index of a free slot that can be populated with
  * a hash entry for the given 'key'.
  * If the key already exists, -1 is returned.
- *
  * 返回可以将 key 插入到哈希表的索引位置
  * 如果 key 已经存在于哈希表，那么返回 -1
  *
  * Note that if we are in the process of rehashing the hash table, the
  * index is always returned in the context of the second (new) hash table. 
- *
  * 注意，如果字典正在进行 rehash ，那么总是返回 1 号哈希表的索引。
  * 因为在字典进行 rehash 时，新节点总是插入到 1 号哈希表。
  *
@@ -1421,18 +1419,15 @@ static int _dictKeyIndex(dict *d, const void *key) {
     if (_dictExpandIfNeeded(d) == DICT_ERR)
         return -1;
 
-    /* Compute the key hash value */
-    // 计算 key 的哈希值
+    /* Compute the key hash value；计算 key 的哈希值 */
     h = dictHashKey(d, key);
-    // T = O(1)
+    /* 后处理 [1] 也就意味着永远返回的都是新 ht 的 index */
     for (table = 0; table <= 1; table++) {
-
-        // 计算索引值
+        /* 计算索引值 */
         idx = h & d->ht[table].sizemask;
 
-        /* Search if this slot does not already contain the given key */
-        // 查找 key 是否存在
-        // T = O(1)
+        /* Search if this slot does not already contain the given key；查找 key 是否存在 */
+        /* T = O(1) */
         he = d->ht[table].table[idx];
         while(he) {
             if (dictCompareKeys(d, key, he->key))
@@ -1440,12 +1435,11 @@ static int _dictKeyIndex(dict *d, const void *key) {
             he = he->next;
         }
 
-        // 如果运行到这里时，说明 0 号哈希表中所有节点都不包含 key
-        // 如果这时 rehahs 正在进行，那么继续对 1 号哈希表进行 rehash
+        /* 如果运行到这里时，说明 0 号哈希表中所有节点都不包含 key，如果这时 rehahs 正在进行，那么继续对 1 号哈希表进行 rehash */
         if (!dictIsRehashing(d)) break;
     }
 
-    // 返回索引值
+    /* 返回索引值 */ 
     return idx;
 }
 
@@ -1455,12 +1449,10 @@ static int _dictKeyIndex(dict *d, const void *key) {
  * T = O(N)
  */
 void dictEmpty(dict *d, void(callback)(void*)) {
-
-    // 删除两个哈希表上的所有节点
-    // T = O(N)
+    /* 删除两个哈希表上的所有节点；T = O(N) */
     _dictClear(d,&d->ht[0],callback);
     _dictClear(d,&d->ht[1],callback);
-    // 重置属性 
+    /*  重置属性  */
     d->rehashidx = -1;
     d->iterators = 0;
 }
