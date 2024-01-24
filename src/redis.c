@@ -1276,12 +1276,10 @@ void updateCachedTime(void) {
 }
 
 /* This is our timer interrupt, called server.hz times per second.
- *
  * 这是 Redis 的时间中断器，每秒调用 server.hz 次。
  *
  * Here is where we do a number of things that need to be done asynchronously.
  * For instance:
- *
  * 以下是需要异步执行的操作：
  *
  * - Active expired keys collection (it is also performed in a lazy way on
@@ -1312,13 +1310,11 @@ void updateCachedTime(void) {
  * Everything directly called here will be called server.hz times per second,
  * so in order to throttle execution of things we want to do less frequently
  * a macro is used: run_with_period(milliseconds) { .... }
- *
  * 因为 serverCron 函数中的所有代码都会每秒调用 server.hz 次，
  * 为了对部分代码的调用次数进行限制，
  * 使用了一个宏 run_with_period(milliseconds) { ... } ，
  * 这个宏可以将被包含代码的执行次数降低为每 milliseconds 执行一次。
  */
-
 int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     int j;
     REDIS_NOTUSED(eventLoop);

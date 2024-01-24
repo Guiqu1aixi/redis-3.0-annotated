@@ -273,7 +273,7 @@ robj *dbRandomKey(redisDb *db) {
         // 为键创建一个字符串对象，对象的值为键的名字
         keyobj = createStringObject(key,sdslen(key));
         // 检查键是否带有过期时间
-        if (dictFind(db->expires,key)) {
+        if (dictFind(db->expires, key)) {
             // 如果键已经过期，那么将它删除，并继续随机下个键
             if (expireIfNeeded(db,keyobj)) {
                 decrRefCount(keyobj);
@@ -293,7 +293,6 @@ robj *dbRandomKey(redisDb *db) {
  * 删除成功返回 1 ，因为键不存在而导致删除失败时，返回 0 。
  */
 int dbDelete(redisDb *db, robj *key) {
-
     /* Deleting an entry from the expires dict will not free the sds of
      * the key, because it is shared with the main dictionary. */
     // 删除键的过期时间
@@ -357,7 +356,6 @@ long long emptyDb(void(callback)(void*)) {
 
     // 清空所有数据库
     for (j = 0; j < server.dbnum; j++) {
-
         // 记录被删除键的数量
         removed += dictSize(server.db[j].dict);
 
@@ -757,7 +755,7 @@ void scanGenericCommand(redisClient *c, robj *o, unsigned long cursor) {
         /* We pass two pointers to the callback: the list to which it will
          * add new elements, and the object containing the dictionary so that
          * it is possible to fetch more data in a type-dependent way. 
-         * 我们向回调函数传入两个指针： 一个是用于记录被迭代元素的列表，另一个是字典对象
+         * 我们向回调函数传入两个指针：[0]记录被迭代元素的列表，[1]字典对象
          * 从而实现类型无关的数据提取操作
          */
         privdata[0] = keys;
@@ -769,7 +767,7 @@ void scanGenericCommand(redisClient *c, robj *o, unsigned long cursor) {
         int pos = 0;
         int64_t ll;
 
-        while(intsetGet(o->ptr,pos++,&ll))
+        while(intsetGet(o->ptr, pos++, &ll))
             listAddNodeTail(keys, createStringObjectFromLongLong(ll));
         cursor = 0;
     } else if (o->type == REDIS_HASH || o->type == REDIS_ZSET) {
@@ -806,7 +804,7 @@ void scanGenericCommand(redisClient *c, robj *o, unsigned long cursor) {
                 int len;
 
                 redisAssert(kobj->encoding == REDIS_ENCODING_INT);
-                len = ll2string(buf,sizeof(buf),(long)kobj->ptr);
+                len = ll2string(buf, sizeof(buf), (long)kobj->ptr);
                 if (!stringmatchlen(pat, patlen, buf, len, 0)) filter = 1;
             }
         }
@@ -955,32 +953,30 @@ void renameGenericCommand(redisClient *c, int nx) {
         // 如果目标键存在，并且执行的是 RENAMENX ，那么直接返回
         if (nx) {
             decrRefCount(o);
-            addReply(c,shared.czero);
+            addReply(c, shared.czero);
             return;
         }
 
         // 如果执行的是 RENAME ，那么删除已有的目标键
         /* Overwrite: delete the old key before creating the new one
          * with the same name. */
-        dbDelete(c->db,c->argv[2]);
+        dbDelete(c->db, c->argv[2]);
     }
 
     // 将来源键的值对象和目标键进行关联
-    dbAdd(c->db,c->argv[2],o);
+    dbAdd(c->db, c->argv[2],o);
 
     // 如果有过期时间，那么为目标键设置过期时间
-    if (expire != -1) setExpire(c->db,c->argv[2],expire);
+    if (expire != -1) setExpire(c->db, c->argv[2],expire);
 
     // 删除来源键
     dbDelete(c->db,c->argv[1]);
 
-    signalModifiedKey(c->db,c->argv[1]);
-    signalModifiedKey(c->db,c->argv[2]);
+    signalModifiedKey(c->db, c->argv[1]);
+    signalModifiedKey(c->db, c->argv[2]);
 
-    notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,"rename_from",
-        c->argv[1],c->db->id);
-    notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,"rename_to",
-        c->argv[2],c->db->id);
+    notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC, "rename_from", c->argv[1],c->db->id);
+    notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC, "rename_to", c->argv[2],c->db->id);
 
     server.dirty++;
 
@@ -1071,17 +1067,16 @@ int removeExpire(redisDb *db, robj *key) {
     /* An expire may only be removed if there is a corresponding entry in the
      * main dict. Otherwise, the key will never be freed. */
     // 确保键带有过期时间
-    redisAssertWithInfo(NULL,key,dictFind(db->dict,key->ptr) != NULL);
+    redisAssertWithInfo(NULL, key, dictFind(db->dict, key->ptr) != NULL);
 
     // 删除过期时间
-    return dictDelete(db->expires,key->ptr) == DICT_OK;
+    return dictDelete(db->expires, key->ptr) == DICT_OK;
 }
 
 /*
  * 将键 key 的过期时间设为 when
  */
 void setExpire(redisDb *db, robj *key, long long when) {
-
     dictEntry *kde, *de;
 
     /* Reuse the sds from the main dict in the expire dict */
@@ -1125,9 +1120,7 @@ long long getExpire(redisDb *db, robj *key) {
 /* Propagate expires into slaves and the AOF file.
  * When a key expires in the master, a DEL operation for this key is sent
  * to all the slaves and the AOF file if enabled.
- *
  * 将过期时间传播到附属节点和 AOF 文件。
- *
  * 当一个键在主节点中过期时，
  * 主节点会向所有附属节点和 AOF 文件传播一个显式的 DEL 命令。
  *
@@ -1135,7 +1128,6 @@ long long getExpire(redisDb *db, robj *key) {
  * AOF and the master->slave link guarantee operation ordering, everything
  * will be consistent even if we allow write operations against expiring
  * keys. 
- *
  * 这种做法使得对键的过期可以集中在一处处理，
  * 因为 AOF 以及主节点和附属节点之间的链接，都可以保证操作的执行顺序，
  * 所以即使有写操作对过期键执行，所有数据都还是 consistent 的。
@@ -1168,7 +1160,6 @@ void propagateExpire(redisDb *db, robj *key) {
  * 返回 1 表示键已经因为过期而被删除了。
  */
 int expireIfNeeded(redisDb *db, robj *key) {
-
     // 取出键的过期时间
     mstime_t when = getExpire(db,key);
     mstime_t now;
@@ -1276,7 +1267,6 @@ void expireGenericCommand(redisClient *c, long long basetime, int unit) {
      * 并且等待主节点发来 DEL 命令。
      */
     if (when <= mstime() && !server.loading && !server.masterhost) {
-
         // when 提供的时间已经过期，服务器为主节点，并且没在载入数据
 
         robj *aux;
@@ -1298,16 +1288,15 @@ void expireGenericCommand(redisClient *c, long long basetime, int unit) {
 
         return;
     } else {
-
         // 设置键的过期时间
         // 如果服务器为附属节点，或者服务器正在载入，
         // 那么这个 when 有可能已经过期的
-        setExpire(c->db,key,when);
+        setExpire(c->db, key, when);
 
-        addReply(c,shared.cone);
+        addReply(c, shared.cone);
 
-        signalModifiedKey(c->db,key);
-        notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC,"expire",key,c->db->id);
+        signalModifiedKey(c->db, key);
+        notifyKeyspaceEvent(REDIS_NOTIFY_GENERIC, "expire", key, c->db->id);
 
         server.dirty++;
 
