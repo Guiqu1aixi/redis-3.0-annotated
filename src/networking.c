@@ -758,10 +758,12 @@ static void acceptCommonHandler(int fd, int flags) {
     /* If maxclient directive is set and this is one client more... close the
      * connection. Note that we create the client instead to check before
      * for this condition, since now the socket is already set in non-blocking
-     * mode and we can send an error for free using the Kernel I/O */
-    // 如果新添加的客户端令服务器的最大客户端数量达到了
-    // 那么向新客户端写入错误信息，并关闭新客户端
-    // 先创建客户端，再进行数量检查是为了方便地进行错误信息写入
+     * mode and we can send an error for free using the Kernel I/O 
+     * 
+     * 如果新添加的客户端令服务器的最大客户端数量达到了
+     * 那么向新客户端写入错误信息，并关闭新客户端
+     * 先创建客户端，再进行数量检查是为了方便地进行错误信息写入
+     * */
     if (listLength(server.clients) > server.maxclients) {
         char *err = "-ERR max number of clients reached\r\n";
 
@@ -769,16 +771,16 @@ static void acceptCommonHandler(int fd, int flags) {
         if (write(c->fd, err, strlen(err)) == -1) {
             /* Nothing to do, Just to avoid the warning... */
         }
-        // 更新拒绝连接数
+        /* 更新拒绝连接数 */
         server.stat_rejected_conn++;
         freeClient(c);
         return;
     }
 
-    // 更新连接次数
+    /* 更新连接次数 */
     server.stat_numconnections++;
 
-    // 设置 FLAG
+    /* 设置 FLAG */
     c->flags |= flags;
 }
 

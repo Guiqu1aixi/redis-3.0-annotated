@@ -105,7 +105,6 @@ static int aeApiAddEvent(aeEventLoop *eventLoop, int fd, int mask) {
      * operation. Otherwise we need an ADD operation. 
      *
      * 如果 fd 没有关联任何事件，那么这是一个 ADD 操作。
-     *
      * 如果已经关联了某个/某些事件，那么这是一个 MOD 操作。
      */
     int op = eventLoop->events[fd].mask == AE_NONE ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
@@ -154,8 +153,7 @@ static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
     int retval, numevents = 0;
 
     /* 等待事件 */
-    retval = epoll_wait(state->epfd, state->events, eventLoop->setsize,
-            tvp ? (tvp->tv_sec * 1000 + tvp->tv_usec / 1000) : -1);
+    retval = epoll_wait(state->epfd, state->events, eventLoop->setsize, tvp ? (tvp->tv_sec * 1000 + tvp->tv_usec / 1000) : -1);
 
     /* 有至少一个事件就绪 */ 
     if (retval > 0) {

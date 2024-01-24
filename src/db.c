@@ -109,7 +109,6 @@ robj *lookupKeyRead(redisDb *db, robj *key) {
  * 找到时返回值对象，没找到返回 NULL 。
  */
 robj *lookupKeyWrite(redisDb *db, robj *key) {
-
     // 删除过期键
     expireIfNeeded(db,key);
 
@@ -164,7 +163,6 @@ robj *lookupKeyWriteOrReply(redisClient *c, robj *key, robj *reply) {
  * 程序在键已经存在时会停止。
  */
 void dbAdd(redisDb *db, robj *key, robj *val) {
-
     // 复制键名
     sds copy = sdsdup(key->ptr);
 
@@ -172,7 +170,7 @@ void dbAdd(redisDb *db, robj *key, robj *val) {
     int retval = dictAdd(db->dict, copy, val);
 
     // 如果键已经存在，那么停止
-    redisAssertWithInfo(NULL,key,retval == REDIS_OK);
+    redisAssertWithInfo(NULL, key, retval == REDIS_OK);
 
     // 如果开启了集群模式，那么将键保存到槽里面
     if (server.cluster_enabled) slotToKeyAdd(key);
@@ -220,21 +218,20 @@ void dbOverwrite(redisDb *db, robj *key, robj *val) {
  *    键的过期时间会被移除（键变为持久的）
  */
 void setKey(redisDb *db, robj *key, robj *val) {
-
     // 添加或覆写数据库中的键值对
-    if (lookupKeyWrite(db,key) == NULL) {
+    if (lookupKeyWrite(db, key) == NULL) {
         dbAdd(db,key,val);
     } else {
-        dbOverwrite(db,key,val);
+        dbOverwrite(db, key, val);
     }
 
     incrRefCount(val);
 
-    // 移除键的过期时间
-    removeExpire(db,key);
+    /* 移除键的过期时间 */
+    removeExpire(db, key);
 
-    // 发送键修改通知
-    signalModifiedKey(db,key);
+    /* 发送键修改通知 */
+    signalModifiedKey(db, key);
 }
 
 /*
@@ -896,7 +893,6 @@ void shutdownCommand(redisClient *c) {
         addReply(c,shared.syntaxerr);
         return;
     } else if (c->argc == 2) {
-
         // 停机时不进行保存
         if (!strcasecmp(c->argv[1]->ptr,"nosave")) {
             flags |= REDIS_SHUTDOWN_NOSAVE;
@@ -949,7 +945,6 @@ void renameGenericCommand(redisClient *c, int nx) {
 
     // 检查目标键是否存在
     if (lookupKeyWrite(c->db,c->argv[2]) != NULL) {
-
         // 如果目标键存在，并且执行的是 RENAMENX ，那么直接返回
         if (nx) {
             decrRefCount(o);

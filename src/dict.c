@@ -277,8 +277,7 @@ int dictResize(dict *d)
  *
  * T = O(N)
  */
-int dictExpand(dict *d, unsigned long size)
-{
+int dictExpand(dict *d, unsigned long size) {
     // 新哈希表
     dictht n; /* the new hash table */
 
@@ -296,42 +295,28 @@ int dictExpand(dict *d, unsigned long size)
     /* Allocate the new hash table and initialize all pointers to NULL */
     // 为哈希表分配空间，并将所有指针指向 NULL
     n.size = realsize;
-    n.sizemask = realsize-1;
+    n.sizemask = realsize - 1;
     // T = O(N)
-    n.table = zcalloc(realsize*sizeof(dictEntry*));
+    n.table = zcalloc(realsize * sizeof(dictEntry*));
     n.used = 0;
 
     /* Is this the first initialization? If so it's not really a rehashing
-     * we just set the first hash table so that it can accept keys. */
-    // 如果 0 号哈希表为空，那么这是一次初始化：
-    // 程序将新哈希表赋给 0 号哈希表的指针，然后字典就可以开始处理键值对了。
+     * we just set the first hash table so that it can accept keys. 
+     * 如果 0 号哈希表为空，那么这是一次初始化：程序将新哈希表赋给 0 号哈希表的指针，然后字典就可以开始处理键值对了。
+     */
     if (d->ht[0].table == NULL) {
         d->ht[0] = n;
         return DICT_OK;
     }
 
-    /* Prepare a second hash table for incremental rehashing */
-    // 如果 0 号哈希表非空，那么这是一次 rehash ：
-    // 程序将新哈希表设置为 1 号哈希表，
-    // 并将字典的 rehash 标识打开，让程序可以开始对字典进行 rehash
+    /* Prepare a second hash table for incremental rehashing 
+     * 如果 0 号哈希表非空，那么这是一次 rehash ：
+     *     程序将新哈希表设置为 1 号哈希表；
+     *     并将字典的 rehash 标识打开，让程序可以开始对字典进行 rehash
+     */
     d->ht[1] = n;
     d->rehashidx = 0;
     return DICT_OK;
-
-    /* 顺带一提，上面的代码可以重构成以下形式：
-    
-    if (d->ht[0].table == NULL) {
-        // 初始化
-        d->ht[0] = n;
-    } else {
-        // rehash 
-        d->ht[1] = n;
-        d->rehashidx = 0;
-    }
-
-    return DICT_OK;
-
-    */
 }
 
 /* Performs N steps of incremental rehashing. Returns 1 if there are still
@@ -475,8 +460,8 @@ static void _dictRehashStep(dict *d) {
     if (d->iterators == 0) dictRehash(d,1);
 }
 
-/* Add an element to the target hash table */
 /*
+ * Add an element to the target hash table
  * 尝试将给定键值对添加到字典中
  *
  * 只有给定键 key 不存在于字典时，添加操作才会成功
@@ -485,20 +470,17 @@ static void _dictRehashStep(dict *d) {
  *
  * 最坏 T = O(N) ，平滩 O(1) 
  */
-int dictAdd(dict *d, void *key, void *val)
-{
-    // 尝试添加键到字典，并返回包含了这个键的新哈希节点
-    // T = O(N)
+int dictAdd(dict *d, void *key, void *val) {
+    /* 尝试添加键到字典，并返回包含了这个键的新哈希节点；T = O(N)*/
     dictEntry *entry = dictAddRaw(d,key);
 
-    // 键已存在，添加失败
+    /* 键已存在，添加失败 */
     if (!entry) return DICT_ERR;
 
-    // 键不存在，设置节点的值
-    // T = O(1)
+    /* 键不存在，设置节点的值；T = O(1)*/
     dictSetVal(d, entry, val);
 
-    // 添加成功
+    /* 添加成功 */
     return DICT_OK;
 }
 
@@ -527,40 +509,35 @@ int dictAdd(dict *d, void *key, void *val)
  *
  * T = O(N)
  */
-dictEntry *dictAddRaw(dict *d, void *key)
-{
+dictEntry *dictAddRaw(dict *d, void *key) {
     int index;
     dictEntry *entry;
     dictht *ht;
 
-    // 如果条件允许的话，进行单步 rehash
-    // T = O(1)
+    /* 如果条件允许的话，进行单步 rehash；T = O(1) */
     if (dictIsRehashing(d)) _dictRehashStep(d);
 
-    /* Get the index of the new element, or -1 if
-     * the element already exists. */
-    // 计算键在哈希表中的索引值
-    // 如果值为 -1 ，那么表示键已经存在
-    // T = O(N)
+    /* Get the index of the new element, or -1 if the element already exists.
+     * 计算键在哈希表中的索引值，如果值为 -1 ，那么表示键已经存在
+     * T = O(N)
+     */
     if ((index = _dictKeyIndex(d, key)) == -1)
         return NULL;
 
-    // T = O(1)
-    /* Allocate the memory and store the new entry */
-    // 如果字典正在 rehash ，那么将新键添加到 1 号哈希表
-    // 否则，将新键添加到 0 号哈希表
+    /* Allocate the memory and store the new entry
+     * 如果字典正在 rehash ，那么将新键添加到 1 号哈希表；否则，将新键添加到 0 号哈希表
+     * T = O(1)
+     */
     ht = dictIsRehashing(d) ? &d->ht[1] : &d->ht[0];
-    // 为新节点分配空间
+    /* 为新节点分配空间 */ 
     entry = zmalloc(sizeof(*entry));
-    // 将新节点插入到链表表头
+    /* 将新节点插入到链表表头，头插法 */
     entry->next = ht->table[index];
     ht->table[index] = entry;
-    // 更新哈希表已使用节点数量
+    /* 更新哈希表已使用节点数量 */
     ht->used++;
 
-    /* Set the hash entry fields. */
-    // 设置新节点的键
-    // T = O(1)
+    /* Set the hash entry fields.设置新节点的键；T = O(1) */
     dictSetKey(d, entry, key);
 
     return entry;
@@ -1370,14 +1347,12 @@ unsigned long dictScan(dict *d, unsigned long v, dictScanFunction *fn, void *pri
 
 /* ------------------------- private functions ------------------------------ */
 
-/* Expand the hash table if needed */
-/*
+/* Expand the hash table if needed
  * 根据需要，初始化字典（的哈希表），或者对字典（的现有哈希表）进行扩展
  *
  * T = O(N)
  */
-static int _dictExpandIfNeeded(dict *d)
-{
+static int _dictExpandIfNeeded(dict *d) {
     /* Incremental rehashing already in progress. Return. */
     // 渐进式 rehash 已经在进行了，直接返回
     if (dictIsRehashing(d)) return DICT_OK;
@@ -1390,18 +1365,16 @@ static int _dictExpandIfNeeded(dict *d)
     /* If we reached the 1:1 ratio, and we are allowed to resize the hash
      * table (global setting) or we should avoid it but the ratio between
      * elements/buckets is over the "safe" threshold, we resize doubling
-     * the number of buckets. */
-    // 一下两个条件之一为真时，对字典进行扩展
-    // 1）字典已使用节点数和字典大小之间的比率接近 1：1
-    //    并且 dict_can_resize 为真
-    // 2）已使用节点数和字典大小之间的比率超过 dict_force_resize_ratio
+     * the number of buckets. 
+     * 以下两个条件之一为真时，对字典进行扩展
+     * 1）字典已使用节点数和字典大小之间的比率接近 1：1
+     * 2）dict_can_resize 为真或者已使用节点数和字典大小之间的比率超过 dict_force_resize_ratio
+     */
     if (d->ht[0].used >= d->ht[0].size &&
-        (dict_can_resize ||
-         d->ht[0].used/d->ht[0].size > dict_force_resize_ratio))
-    {
-        // 新哈希表的大小至少是目前已使用节点数的两倍
-        // T = O(N)
-        return dictExpand(d, d->ht[0].used*2);
+        (dict_can_resize || d->ht[0].used / d->ht[0].size > dict_force_resize_ratio)
+    ) {
+        /*  新哈希表的大小至少是目前已使用节点数的两倍；T = O(N) */
+        return dictExpand(d, d->ht[0].used * 2);
     }
 
     return DICT_OK;
@@ -1440,14 +1413,11 @@ static unsigned long _dictNextPower(unsigned long size)
  *
  * T = O(N)
  */
-static int _dictKeyIndex(dict *d, const void *key)
-{
+static int _dictKeyIndex(dict *d, const void *key) {
     unsigned int h, idx, table;
     dictEntry *he;
 
-    /* Expand the hash table if needed */
-    // 单步 rehash
-    // T = O(N)
+    /* Expand the hash table if needed；单步 rehash；T = O(N) */
     if (_dictExpandIfNeeded(d) == DICT_ERR)
         return -1;
 

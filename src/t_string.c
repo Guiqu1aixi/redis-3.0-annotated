@@ -87,12 +87,10 @@ static int checkStringLength(redisClient *c, long long size) {
 #define REDIS_SET_XX (1<<1)     /* Set if key exists. */
 
 void setGenericCommand(redisClient *c, int flags, robj *key, robj *val, robj *expire, int unit, robj *ok_reply, robj *abort_reply) {
-
     long long milliseconds = 0; /* initialized to avoid any harmness warning */
 
     // 取出过期时间
     if (expire) {
-
         // 取出 expire 参数的值
         // T = O(N)
         if (getLongLongFromObjectOrReply(c, expire, &milliseconds, NULL) != REDIS_OK)
@@ -120,7 +118,7 @@ void setGenericCommand(redisClient *c, int flags, robj *key, robj *val, robj *ex
     }
 
     // 将键值关联到数据库
-    setKey(c->db,key,val);
+    setKey(c->db, key, val);
 
     // 将数据库设为脏
     server.dirty++;
@@ -177,7 +175,7 @@ void setCommand(redisClient *c) {
     // 尝试对值对象进行编码
     c->argv[2] = tryObjectEncoding(c->argv[2]);
 
-    setGenericCommand(c,flags,c->argv[1],c->argv[2],expire,unit,NULL,NULL);
+    setGenericCommand(c, flags, c->argv[1], c->argv[2], expire, unit, NULL, NULL);
 }
 
 void setnxCommand(redisClient *c) {

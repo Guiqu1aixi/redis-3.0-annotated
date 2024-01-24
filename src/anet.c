@@ -433,7 +433,7 @@ int anetWrite(int fd, char *buf, int count)
  * 绑定并创建监听套接字
  */
 static int anetListen(char *err, int s, struct sockaddr *sa, socklen_t len, int backlog) {
-    if (bind(s,sa,len) == -1) {
+    if (bind(s, sa, len) == -1) {
         anetSetError(err, "bind: %s", strerror(errno));
         close(s);
         return ANET_ERR;
@@ -473,6 +473,7 @@ static int _anetTcpServer(char *err, int port, char *bindaddr, int af, int backl
         anetSetError(err, "%s", gai_strerror(rv));
         return ANET_ERR;
     }
+
     for (p = servinfo; p != NULL; p = p->ai_next) {
         if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
             continue;
@@ -482,6 +483,7 @@ static int _anetTcpServer(char *err, int port, char *bindaddr, int af, int backl
         if (anetListen(err, s, p->ai_addr, p->ai_addrlen, backlog) == ANET_ERR) goto error;
         goto end;
     }
+
     if (p == NULL) {
         anetSetError(err, "unable to bind socket");
         goto error;
@@ -569,7 +571,7 @@ int anetUnixAccept(char *err, int s) {
     int fd;
     struct sockaddr_un sa;
     socklen_t salen = sizeof(sa);
-    if ((fd = anetGenericAccept(err,s,(struct sockaddr*)&sa,&salen)) == -1)
+    if ((fd = anetGenericAccept(err, s, (struct sockaddr*)&sa, &salen)) == -1)
         return ANET_ERR;
 
     return fd;
