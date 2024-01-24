@@ -677,23 +677,21 @@ void scanGenericCommand(redisClient *c, robj *o, unsigned long cursor) {
     // 输入类型检查
     redisAssert(o == NULL || o->type == REDIS_SET || o->type == REDIS_HASH || o->type == REDIS_ZSET);
 
-    /* Set i to the first option argument. The previous one is the cursor. */
-    // 设置第一个选项参数的索引位置
-    // 0    1      2      3  
-    // SCAN OPTION <op_arg>         SCAN 命令的选项值从索引 2 开始
-    // HSCAN <key> OPTION <op_arg>  而其他 *SCAN 命令的选项值从索引 3 开始
+    /* Set i to the first option argument. The previous one is the cursor. 
+     * 设置第一个选项参数的索引位置
+     * 0    1      2      3  
+     * SCAN 命令的选项值从索引 2 开始，SCAN 命令 o == null
+     * HSCAN <key> OPTION <op_arg>  而其他 *SCAN 命令的选项值从索引 3 开始
+     */
     i = (o == NULL) ? 2 : 3; /* Skip the key argument if needed. */
 
-    /* Step 1: Parse options. */
-    // 分析选项参数
+    /* Step 1: Parse options. 分析选项参数 */
     while (i < c->argc) {
         j = c->argc - i;
 
-        // COUNT <number>
+        /* COUNT <number>；strcasecmp 函数比较两个字符串，不区分大小写，相等，则返回0，反之则返回一个整数 */
         if (!strcasecmp(c->argv[i]->ptr, "count") && j >= 2) {
-            if (getLongFromObjectOrReply(c, c->argv[i+1], &count, NULL)
-                != REDIS_OK)
-            {
+            if (getLongFromObjectOrReply(c, c->argv[i+1], &count, NULL) != REDIS_OK) {
                 goto cleanup;
             }
 
@@ -703,9 +701,8 @@ void scanGenericCommand(redisClient *c, robj *o, unsigned long cursor) {
             }
 
             i += 2;
-
-        // MATCH <pattern>
         } else if (!strcasecmp(c->argv[i]->ptr, "match") && j >= 2) {
+            /* MATCH <pattern> */
             pat = c->argv[i+1]->ptr;
             patlen = sdslen(pat);
 
@@ -714,9 +711,8 @@ void scanGenericCommand(redisClient *c, robj *o, unsigned long cursor) {
             use_pattern = !(pat[0] == '*' && patlen == 1);
 
             i += 2;
-
-        // error
         } else {
+            /* error */
             addReply(c,shared.syntaxerr);
             goto cleanup;
         }
@@ -728,27 +724,28 @@ void scanGenericCommand(redisClient *c, robj *o, unsigned long cursor) {
      * representation that is not a hash table, we are sure that it is also
      * composed of a small number of elements. So to avoid taking state we
      * just return everything inside the object in a single call, setting the
-     * cursor to zero to signal the end of the iteration. */
-     // 如果对象的底层实现为 ziplist 、intset 而不是哈希表，
-     // 那么这些对象应该只包含了少量元素，
-     // 为了保持不让服务器记录迭代状态的设计
-     // 我们将 ziplist 或者 intset 里面的所有元素都一次返回给调用者
-     // 并向调用者返回游标（cursor） 0
-
+     * cursor to zero to signal the end of the iteration.
+     * 
+     * 如果对象的底层实现为 ziplist 、intset 而不是哈希表，
+     * 那么这些对象应该只包含了少量元素，
+     * 为了保持不让服务器记录迭代状态的设计
+     * 我们将 ziplist 或者 intset 里面的所有元素都一次返回给调用者
+     * 并向调用者返回游标（cursor） 0
+     */
     /* Handle the case of a hash table. */
     ht = NULL;
     if (o == NULL) {
-        // 迭代目标为数据库
+        /* 迭代目标为数据库，此时即是SCAN命令 */ 
         ht = c->db->dict;
     } else if (o->type == REDIS_SET && o->encoding == REDIS_ENCODING_HT) {
-        // 迭代目标为 HT 编码的集合
+        /* 迭代目标为 HT 编码的集合 */
         ht = o->ptr;
     } else if (o->type == REDIS_HASH && o->encoding == REDIS_ENCODING_HT) {
-        // 迭代目标为 HT 编码的哈希
+        /* 迭代目标为 HT 编码的哈希 */ 
         ht = o->ptr;
         count *= 2; /* We return key / value for this type. */
     } else if (o->type == REDIS_ZSET && o->encoding == REDIS_ENCODING_SKIPLIST) {
-        // 迭代目标为 HT 编码的跳跃表
+        /* 迭代目标为 HT 编码的跳跃表 */
         zset *zs = o->ptr;
         ht = zs->dict;
         count *= 2; /* We return key / value for this type. */
@@ -759,11 +756,10 @@ void scanGenericCommand(redisClient *c, robj *o, unsigned long cursor) {
 
         /* We pass two pointers to the callback: the list to which it will
          * add new elements, and the object containing the dictionary so that
-         * it is possible to fetch more data in a type-dependent way. */
-        // 我们向回调函数传入两个指针：
-        // 一个是用于记录被迭代元素的列表
-        // 另一个是字典对象
-        // 从而实现类型无关的数据提取操作
+         * it is possible to fetch more data in a type-dependent way. 
+         * 我们向回调函数传入两个指针： 一个是用于记录被迭代元素的列表，另一个是字典对象
+         * 从而实现类型无关的数据提取操作
+         */
         privdata[0] = keys;
         privdata[1] = o;
         do {
@@ -777,16 +773,15 @@ void scanGenericCommand(redisClient *c, robj *o, unsigned long cursor) {
             listAddNodeTail(keys,createStringObjectFromLongLong(ll));
         cursor = 0;
     } else if (o->type == REDIS_HASH || o->type == REDIS_ZSET) {
-        unsigned char *p = ziplistIndex(o->ptr,0);
+        unsigned char *p = ziplistIndex(o->ptr, 0);
         unsigned char *vstr;
         unsigned int vlen;
         long long vll;
 
         while(p) {
-            ziplistGet(p,&vstr,&vlen,&vll);
+            ziplistGet(p, &vstr, &vlen, &vll);
             listAddNodeTail(keys,
-                (vstr != NULL) ? createStringObject((char*)vstr,vlen) :
-                                 createStringObjectFromLongLong(vll));
+                (vstr != NULL) ? createStringObject((char*)vstr, vlen) : createStringObjectFromLongLong(vll));
             p = ziplistNext(o->ptr,p);
         }
         cursor = 0;
@@ -855,7 +850,7 @@ void scanGenericCommand(redisClient *c, robj *o, unsigned long cursor) {
     }
 
 cleanup:
-    listSetFreeMethod(keys,decrRefCountVoid);
+    listSetFreeMethod(keys, decrRefCountVoid);
     listRelease(keys);
 }
 

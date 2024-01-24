@@ -37,12 +37,9 @@
  * AlFreeList(), but private value of every node need to be freed
  * by the user before to call AlFreeList().
  *
- * On error, NULL is returned. Otherwise the pointer to the new list. */
-/*
- * 创建一个新的链表
- *
- * 创建成功返回链表，失败返回 NULL 。
- *
+ * On error, NULL is returned. Otherwise the pointer to the new list.
+ * 
+ * 创建一个新的链表，创建成功返回链表，失败返回 NULL
  * T = O(1)
  */
 list *listCreate(void)

@@ -901,7 +901,6 @@ int getLongLongFromObject(robj *o, long long *target) {
         // o 为 NULL 时，将值设为 0 。
         value = 0;
     } else {
-
         // 确保对象为 REDIS_STRING 类型
         redisAssertWithInfo(NULL,o,o->type == REDIS_STRING);
         if (sdsEncodedObject(o)) {
@@ -938,7 +937,6 @@ int getLongLongFromObject(robj *o, long long *target) {
  * T = O(N)
  */
 int getLongLongFromObjectOrReply(redisClient *c, robj *o, long long *target, const char *msg) {
-
     long long value;
 
     // T = O(N)
