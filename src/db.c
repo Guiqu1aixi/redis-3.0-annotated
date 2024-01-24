@@ -770,7 +770,7 @@ void scanGenericCommand(redisClient *c, robj *o, unsigned long cursor) {
         int64_t ll;
 
         while(intsetGet(o->ptr,pos++,&ll))
-            listAddNodeTail(keys,createStringObjectFromLongLong(ll));
+            listAddNodeTail(keys, createStringObjectFromLongLong(ll));
         cursor = 0;
     } else if (o->type == REDIS_HASH || o->type == REDIS_ZSET) {
         unsigned char *p = ziplistIndex(o->ptr, 0);
@@ -862,18 +862,18 @@ void scanCommand(redisClient *c) {
 }
 
 void dbsizeCommand(redisClient *c) {
-    addReplyLongLong(c,dictSize(c->db->dict));
+    addReplyLongLong(c, dictSize(c->db->dict));
 }
 
 void lastsaveCommand(redisClient *c) {
-    addReplyLongLong(c,server.lastsave);
+    addReplyLongLong(c, server.lastsave);
 }
 
 void typeCommand(redisClient *c) {
     robj *o;
     char *type;
 
-    o = lookupKeyRead(c->db,c->argv[1]);
+    o = lookupKeyRead(c->db, c->argv[1]);
 
     if (o == NULL) {
         type = "none";
@@ -888,7 +888,7 @@ void typeCommand(redisClient *c) {
         }
     }
 
-    addReplyStatus(c,type);
+    addReplyStatus(c, type);
 }
 
 void shutdownCommand(redisClient *c) {
