@@ -106,25 +106,22 @@ typedef struct dictType {
 
 
 /* This is our hash table structure. Every dictionary has two of this as we
- * implement incremental rehashing, for the old to the new table. */
-/*
+ * implement incremental rehashing, for the old to the new table.
  * 哈希表
- *
  * 每个字典都使用两个哈希表，从而实现渐进式 rehash 。
  */
 typedef struct dictht {
     
-    // 哈希表数组
+    /* 哈希表数组 */
     dictEntry **table;
 
-    // 哈希表大小
+    /* 哈希表大小 */ 
     unsigned long size;
     
-    // 哈希表大小掩码，用于计算索引值
-    // 总是等于 size - 1
+    /* 哈希表大小掩码，用于计算索引值，总是等于 size - 1 */
     unsigned long sizemask;
 
-    // 该哈希表已有节点的数量
+    /* 该哈希表已有节点的数量 */ 
     unsigned long used;
 
 } dictht;
