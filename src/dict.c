@@ -556,15 +556,12 @@ dictEntry *dictAddRaw(dict *d, void *key) {
  *
  * T = O(N)
  */
-int dictReplace(dict *d, void *key, void *val)
-{
+int dictReplace(dict *d, void *key, void *val) {
     dictEntry *entry, auxentry;
 
-    /* Try to add the element. If the key
-     * does not exists dictAdd will suceed. */
-    // 尝试直接将键值对添加到字典
-    // 如果键 key 不存在的话，添加会成功
-    // T = O(N)
+    /* Try to add the element. If the key does not exists dictAdd will suceed.
+     * 尝试直接将键值对添加到字典，如果键 key 不存在的话，添加会成功；T = O(N)
+     */
     if (dictAdd(d, key, val) == DICT_OK)
         return 1;
 
@@ -775,8 +772,7 @@ int _dictClear(dict *d, dictht *ht, void(callback)(void *)) {
  *
  * T = O(N)
  */
-void dictRelease(dict *d)
-{
+void dictRelease(dict *d) {
     // 删除并清空两个哈希表
     _dictClear(d,&d->ht[0],NULL);
     _dictClear(d,&d->ht[1],NULL);
@@ -791,8 +787,7 @@ void dictRelease(dict *d)
  *
  * T = O(1)
  */
-dictEntry *dictFind(dict *d, const void *key)
-{
+dictEntry *dictFind(dict *d, const void *key) {
     dictEntry *he;
     unsigned int h, idx, table;
 
@@ -807,7 +802,6 @@ dictEntry *dictFind(dict *d, const void *key)
     // 在字典的哈希表中查找这个键
     // T = O(1)
     for (table = 0; table <= 1; table++) {
-
         // 计算索引值
         idx = h & d->ht[table].sizemask;
 
@@ -815,7 +809,6 @@ dictEntry *dictFind(dict *d, const void *key)
         he = d->ht[table].table[idx];
         // T = O(1)
         while(he) {
-
             if (dictCompareKeys(d, key, he->key))
                 return he;
 
@@ -892,8 +885,7 @@ long long dictFingerprint(dict *d) {
  *
  * T = O(1)
  */
-dictIterator *dictGetIterator(dict *d)
-{
+dictIterator *dictGetIterator(dict *d) {
     dictIterator *iter = zmalloc(sizeof(*iter));
 
     iter->d = d;
@@ -927,8 +919,7 @@ dictIterator *dictGetSafeIterator(dict *d) {
  *
  * T = O(1)
  */
-dictEntry *dictNext(dictIterator *iter)
-{
+dictEntry *dictNext(dictIterator *iter) {
     while (1) {
 
         // 进入这个循环有两种可能：
