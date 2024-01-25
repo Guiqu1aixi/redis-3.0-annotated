@@ -337,68 +337,64 @@ int dictExpand(dict *d, unsigned long size) {
  * T = O(N)
  */
 int dictRehash(dict *d, int n) {
-
-    // 只可以在 rehash 进行中时执行
+    /* 只可以在 rehash 进行中时执行 */
     if (!dictIsRehashing(d)) return 0;
 
-    // 进行 N 步迁移
-    // T = O(N)
+    /* 进行 N 步迁移；T = O(N) */ 
     while(n--) {
         dictEntry *de, *nextde;
 
         /* Check if we already rehashed the whole table... */
-        // 如果 0 号哈希表为空，那么表示 rehash 执行完毕
-        // T = O(1)
+        /* 如果 0 号哈希表为空，那么表示 rehash 执行完毕；T = O(1) */
         if (d->ht[0].used == 0) {
-            // 释放 0 号哈希表
+            /* 释放 0 号哈希表 */ 
             zfree(d->ht[0].table);
-            // 将原来的 1 号哈希表设置为新的 0 号哈希表
+            /* 将原来的 1 号哈希表设置为新的 0 号哈希表 */
             d->ht[0] = d->ht[1];
-            // 重置旧的 1 号哈希表
+            /* 重置旧的 1 号哈希表 */
             _dictReset(&d->ht[1]);
-            // 关闭 rehash 标识
+            /* 关闭 rehash 标识 */ 
             d->rehashidx = -1;
-            // 返回 0 ，向调用者表示 rehash 已经完成
+            /* 返回 0 ，向调用者表示 rehash 已经完成 */ 
             return 0;
         }
 
         /* Note that rehashidx can't overflow as we are sure there are more
          * elements because ht[0].used != 0 */
-        // 确保 rehashidx 没有越界
+        /* 确保 rehashidx 没有越界 */
         assert(d->ht[0].size > (unsigned)d->rehashidx);
 
-        // 略过数组中为空的索引，找到下一个非空索引
+        /* 略过数组中为空的索引，找到下一个非空索引 */
         while(d->ht[0].table[d->rehashidx] == NULL) d->rehashidx++;
 
-        // 指向该索引的链表表头节点
+        /* 指向该索引的链表表头节点 */
         de = d->ht[0].table[d->rehashidx];
         /* Move all the keys in this bucket from the old to the new hash HT */
-        // 将链表中的所有节点迁移到新哈希表
-        // T = O(1)
+        /* 将链表中的所有节点迁移到新哈希表；T = O(1) */
         while(de) {
             unsigned int h;
 
-            // 保存下个节点的指针
+            /* 保存下个节点的指针 */ 
             nextde = de->next;
 
             /* Get the index in the new hash table */
-            // 计算新哈希表的哈希值，以及节点插入的索引位置
+            /* 计算新哈希表的哈希值，以及节点插入的索引位置 */ 
             h = dictHashKey(d, de->key) & d->ht[1].sizemask;
 
-            // 插入节点到新哈希表
+            /* 插入节点到新哈希表 */ 
             de->next = d->ht[1].table[h];
             d->ht[1].table[h] = de;
 
-            // 更新计数器
+            /* 更新计数器 */ 
             d->ht[0].used--;
             d->ht[1].used++;
 
-            // 继续处理下个节点
+            /* 继续处理下个节点 */ 
             de = nextde;
         }
-        // 将刚迁移完的哈希表索引的指针设为空
+        /* 将刚迁移完的哈希表索引的指针设为空 */ 
         d->ht[0].table[d->rehashidx] = NULL;
-        // 更新 rehash 索引
+        /* 更新 rehash 索引 */ 
         d->rehashidx++;
     }
 
@@ -985,8 +981,7 @@ dictEntry *dictNext(dictIterator *iter) {
  *
  * T = O(1)
  */
-void dictReleaseIterator(dictIterator *iter)
-{
+void dictReleaseIterator(dictIterator *iter) {
 
     if (!(iter->index == -1 && iter->table == 0)) {
         // 释放安全迭代器时，安全迭代器计数器减一
@@ -1010,8 +1005,7 @@ void dictReleaseIterator(dictIterator *iter)
  *
  * T = O(N)
 */
-dictEntry *dictGetRandomKey(dict *d)
-{
+dictEntry *dictGetRandomKey(dict *d) {
     dictEntry *he, *orighe;
     unsigned int h;
     int listlen, listele;
@@ -1026,9 +1020,8 @@ dictEntry *dictGetRandomKey(dict *d)
     if (dictIsRehashing(d)) {
         // T = O(N)
         do {
-            h = random() % (d->ht[0].size+d->ht[1].size);
-            he = (h >= d->ht[0].size) ? d->ht[1].table[h - d->ht[0].size] :
-                                      d->ht[0].table[h];
+            h = random() % (d->ht[0].size + d->ht[1].size);
+            he = (h >= d->ht[0].size) ? d->ht[1].table[h - d->ht[0].size] : d->ht[0].table[h];
         } while(he == NULL);
     // 否则，只从 0 号哈希表中查找节点
     } else {
@@ -1042,24 +1035,24 @@ dictEntry *dictGetRandomKey(dict *d)
     /* Now we found a non empty bucket, but it is a linked
      * list and we need to get a random element from the list.
      * The only sane way to do so is counting the elements and
-     * select a random index. */
-    // 目前 he 已经指向一个非空的节点链表
-    // 程序将从这个链表随机返回一个节点
+     * select a random index. 
+     * 目前 he 已经指向一个非空的节点链表
+     * 程序将从这个链表随机返回一个节点
+     */
     listlen = 0;
     orighe = he;
-    // 计算节点数量, T = O(1)
+    /*  计算节点数量, T = O(1) */
     while(he) {
         he = he->next;
         listlen++;
     }
-    // 取模，得出随机节点的索引
+    /* 取模，得出随机节点的索引 */
     listele = random() % listlen;
     he = orighe;
-    // 按索引查找节点
-    // T = O(1)
+    /* 按索引查找节点 */
     while(listele--) he = he->next;
 
-    // 返回随机节点
+    /* 返回随机节点 */
     return he;
 }
 
@@ -1282,8 +1275,7 @@ unsigned long dictScan(dict *d, unsigned long v, dictScanFunction *fn, void *pri
             de = de->next;
         }
     } else {
-        /* 迭代有两个哈希表的字典 */
-        /* 指向两个哈希表 */
+        /* 迭代有两个哈希表的字典；指向两个哈希表 */
         t0 = &d->ht[0];
         t1 = &d->ht[1];
 
@@ -1305,10 +1297,11 @@ unsigned long dictScan(dict *d, unsigned long v, dictScanFunction *fn, void *pri
         }
 
         /* Iterate over indices in larger table that are the expansion
-         * of the index pointed to by the cursor in the smaller table */
-        // Iterate over indices in larger table             // 迭代大表中的桶
-        // that are the expansion of the index pointed to   // 这些桶被索引的 expansion 所指向
-        // by the cursor in the smaller table               //
+         * of the index pointed to by the cursor in the smaller table
+         * Iterate over indices in larger table 迭代大表中的桶
+         * that are the expansion of the index pointed to 这些桶被索引的 expansion 所指向
+         * by the cursor in the smaller table 
+         */
         do {
             /* Emit entries at cursor 指向桶，并迭代桶中的所有节点 */
             de = t1->table[v & m1];
@@ -1345,12 +1338,11 @@ unsigned long dictScan(dict *d, unsigned long v, dictScanFunction *fn, void *pri
  */
 static int _dictExpandIfNeeded(dict *d) {
     /* Incremental rehashing already in progress. Return. */
-    // 渐进式 rehash 已经在进行了，直接返回
+    /* 渐进式 rehash 已经在进行了，直接返回 */ 
     if (dictIsRehashing(d)) return DICT_OK;
 
     /* If the hash table is empty expand it to the initial size. */
-    // 如果字典（的 0 号哈希表）为空，那么创建并返回初始化大小的 0 号哈希表
-    // T = O(1)
+    /* 如果字典（的 0 号哈希表）为空，那么创建并返回初始化大小的 0 号哈希表；T = O(1) */ 
     if (d->ht[0].size == 0) return dictExpand(d, DICT_HT_INITIAL_SIZE);
 
     /* If we reached the 1:1 ratio, and we are allowed to resize the hash
@@ -1377,8 +1369,7 @@ static int _dictExpandIfNeeded(dict *d) {
  *
  * T = O(1)
  */
-static unsigned long _dictNextPower(unsigned long size)
-{
+static unsigned long _dictNextPower(unsigned long size) {
     unsigned long i = DICT_HT_INITIAL_SIZE;
 
     if (size >= LONG_MAX) return LONG_MAX;

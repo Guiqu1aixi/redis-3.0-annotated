@@ -849,18 +849,18 @@ int activeExpireCycleTryExpire(redisDb *db, dictEntry *de, long long now) {
 void activeExpireCycle(int type) {
     /* This function has some global state in order to continue the work
      * incrementally across calls. */
-    // 静态变量，用来累积函数连续执行时的数据
+    /* 静态变量，用来累积函数连续执行时的数据 */
     static unsigned int current_db = 0; /* Last DB tested. */
     static int timelimit_exit = 0;      /* Time limit hit in previous call? */
     static long long last_fast_cycle = 0; /* When last fast cycle ran. */
 
     unsigned int j, iteration = 0;
-    // 默认每次处理的数据库数量
+    /* 默认每次处理的数据库数量 */
     unsigned int dbs_per_call = REDIS_DBCRON_DBS_PER_CALL;
-    // 函数开始的时间
+    /* 函数开始的时间 */ 
     long long start = ustime(), timelimit;
 
-    // 快速模式
+    /* 快速模式 */ 
     if (type == ACTIVE_EXPIRE_CYCLE_FAST) {
         /* Don't start a fast cycle if the previous cycle did not exited
          * for time limt. Also don't repeat a fast cycle for the same period
@@ -906,10 +906,10 @@ void activeExpireCycle(int type) {
     if (type == ACTIVE_EXPIRE_CYCLE_FAST)
         timelimit = ACTIVE_EXPIRE_CYCLE_FAST_DURATION; /* in microseconds. */
 
-    // 遍历数据库
+    /* 遍历数据库 */
     for (j = 0; j < dbs_per_call; j++) {
         int expired;
-        // 指向要处理的数据库
+        /* 指向要处理的数据库 */ 
         redisDb *db = server.db + (current_db % server.dbnum);
 
         /* Increment the DB now so we are sure if we run out of time
@@ -919,30 +919,29 @@ void activeExpireCycle(int type) {
          */
         current_db++;
 
-        /* Continue to expire if at the end of the cycle more than 25%
-         * of the keys were expired. */
+        /* Continue to expire if at the end of the cycle more than 25% of the keys were expired. */
         do {
             unsigned long num, slots;
             long long now, ttl_sum;
             int ttl_samples;
 
-            /* If there is nothing to expire try next DB ASAP. 获取数据库中带过期时间的键的数量，如果该数量为 0 ，直接跳过这个数据库*/
+            /* If there is nothing to expire try next DB ASAP. 获取数据库中带过期时间的键的数量，如果该数量为 0，直接跳过这个数据库*/
             if ((num = dictSize(db->expires)) == 0) {
                 db->avg_ttl = 0;
                 break;
             }
-            // 获取数据库中键值对的数量
+
+            /* 获取数据库slot的总数 */ 
             slots = dictSlots(db->expires);
-            // 当前时间
+            /* 当前时间 */
             now = mstime();
 
             /* When there are less than 1% filled slots getting random
              * keys is expensive, so stop here waiting for better times...
-             * The dictionary will be resized asap. */
-            // 这个数据库的使用率低于 1% ，扫描起来太费力了（大部分都会 MISS）
-            // 跳过，等待字典收缩程序运行
-            if (num && slots > DICT_HT_INITIAL_SIZE &&
-                (num * 100 / slots < 1)) break;
+             * The dictionary will be resized asap. 
+             * 这个数据库的使用率低于 1%，扫描起来太费力了（大部分都会 MISS）跳过，等待字典收缩程序运行
+             */
+            if (num && slots > DICT_HT_INITIAL_SIZE && (num * 100 / slots < 1)) break;
 
             /* The main collection cycle. Sample random keys among keys
              * with an expire set, checking for expired ones. 
@@ -955,39 +954,37 @@ void activeExpireCycle(int type) {
             /* 总共处理的键计数器 */ 
             ttl_samples = 0;
 
-            // 每次最多只能检查 LOOKUPS_PER_LOOP 个键
+            /* 每次最多只能检查 LOOKUPS_PER_LOOP 个键 */ 
             if (num > ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP)
                 num = ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP;
 
-            // 开始遍历数据库
+            /* 开始遍历数据库 */
             while (num--) {
                 dictEntry *de;
                 long long ttl;
 
-                // 从 expires 中随机取出一个带过期时间的键
+                /* 从 expires 中随机取出一个带过期时间的键 */
                 if ((de = dictGetRandomKey(db->expires)) == NULL) break;
-                // 计算 TTL
-                ttl = dictGetSignedIntegerVal(de)-now;
-                // 如果键已经过期，那么删除它，并将 expired 计数器增一
-                if (activeExpireCycleTryExpire(db,de,now)) expired++;
+                /* 计算 TTL */ 
+                ttl = dictGetSignedIntegerVal(de) - now;
+                /* 如果键已经过期，那么删除它，并将 expired 计数器增一 */ 
+                if (activeExpireCycleTryExpire(db, de, now)) expired++;
                 if (ttl < 0) ttl = 0;
-                // 累积键的 TTL
+                /* 累积键的 TTL */ 
                 ttl_sum += ttl;
-                // 累积处理键的个数
+                /* 累积处理键的个数 */
                 ttl_samples++;
             }
 
-            /* Update the average TTL stats for this database. */
-            // 为这个数据库更新平均 TTL 统计数据
+            /* Update the average TTL stats for this database.为这个数据库更新平均 TTL 统计数据 */
             if (ttl_samples) {
-                // 计算当前平均值
-                long long avg_ttl = ttl_sum/ttl_samples;
+                /* 计算当前平均值 */
+                long long avg_ttl = ttl_sum / ttl_samples;
                 
-                // 如果这是第一次设置数据库平均 TTL ，那么进行初始化
+                /* 如果这是第一次设置数据库平均 TTL ，那么进行初始化 */
                 if (db->avg_ttl == 0) db->avg_ttl = avg_ttl;
-                /* Smooth the value averaging with the previous one. */
-                // 取数据库的上次平均 TTL 和今次平均 TTL 的平均值
-                db->avg_ttl = (db->avg_ttl+avg_ttl)/2;
+                /* Smooth the value averaging with the previous one. 取数据库的上次平均 TTL 和今次平均 TTL 的平均值 */
+                db->avg_ttl = (db->avg_ttl+avg_ttl) / 2;
             }
 
             /* We can't block forever here even if there are many keys to
@@ -1001,7 +998,7 @@ void activeExpireCycle(int type) {
 
             // 每遍历 16 次执行一次
             if ((iteration & 0xf) == 0 && /* check once every 16 iterations. */
-                (ustime()-start) > timelimit)
+                (ustime() - start) > timelimit)
             {
                 // 如果遍历次数正好是 16 的倍数
                 // 并且遍历的时间超过了 timelimit
@@ -1009,14 +1006,14 @@ void activeExpireCycle(int type) {
                 timelimit_exit = 1;
             }
 
-            // 已经超时了，返回
+            /* 已经超时了，返回 */
             if (timelimit_exit) return;
 
             /* We don't repeat the cycle if there are less than 25% of keys
-             * found expired in the current DB. */
-            // 如果已删除的过期键占当前总数据库带过期时间的键数量的 25 %
-            // 那么不再遍历
-        } while (expired > ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP/4);
+             * found expired in the current DB. 
+             * 如果已删除的过期键占当前总数据库带过期时间的键数量的 25 %，那么不再遍历
+             */
+        } while (expired > ACTIVE_EXPIRE_CYCLE_LOOKUPS_PER_LOOP / 4);
     }
 }
 
@@ -1390,12 +1387,10 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
         }
     }
 
-    /* We need to do a few operations on clients asynchronously. */
-    // 检查客户端，关闭超时客户端，并释放客户端多余的缓冲区
+    /* We need to do a few operations on clients asynchronously. 检查客户端，关闭超时客户端，并释放客户端多余的缓冲区 */
     clientsCron();
 
-    /* Handle background operations on Redis databases. */
-    // 对数据库执行各种操作
+    /* Handle background operations on Redis databases. 对数据库执行各种操作 */
     databasesCron();
 
     /* Start a scheduled AOF rewrite if this was requested by the user while
