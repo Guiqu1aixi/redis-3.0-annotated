@@ -242,9 +242,9 @@ typedef void (dictScanFunction)(void *privdata, const dictEntry *de);
 // 返回给定节点的无符号整数值
 #define dictGetUnsignedIntegerVal(he) ((he)->v.u64)
 // 返回给定字典的大小
-#define dictSlots(d) ((d)->ht[0].size+(d)->ht[1].size)
+#define dictSlots(d) ((d)->ht[0].size + (d)->ht[1].size)
 // 返回字典的已有节点数量
-#define dictSize(d) ((d)->ht[0].used+(d)->ht[1].used)
+#define dictSize(d) ((d)->ht[0].used + (d)->ht[1].used)
 // 查看字典是否正在 rehash
 #define dictIsRehashing(ht) ((ht)->rehashidx != -1)
 

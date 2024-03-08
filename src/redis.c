@@ -780,29 +780,25 @@ void updateDictResizePolicy(void) {
  * 参数 now 是毫秒格式的当前时间
  */
 int activeExpireCycleTryExpire(redisDb *db, dictEntry *de, long long now) {
-    // 获取键的过期时间
+    /* 获取键的过期时间 */ 
     long long t = dictGetSignedIntegerVal(de);
     if (now > t) {
-
-        // 键已过期
-
+        /* 键已过期 */
         sds key = dictGetKey(de);
-        robj *keyobj = createStringObject(key,sdslen(key));
+        robj *keyobj = createStringObject(key, sdslen(key));
 
-        // 传播过期命令
-        propagateExpire(db,keyobj);
-        // 从数据库中删除该键
-        dbDelete(db,keyobj);
-        // 发送事件
-        notifyKeyspaceEvent(REDIS_NOTIFY_EXPIRED,
-            "expired",keyobj,db->id);
+        /* 传播过期命令 */ 
+        propagateExpire(db, keyobj);
+        /* 从数据库中删除该键 */ 
+        dbDelete(db, keyobj);
+        /* 发送事件 */ 
+        notifyKeyspaceEvent(REDIS_NOTIFY_EXPIRED, "expired", keyobj, db->id);
         decrRefCount(keyobj);
-        // 更新计数器
+        /* 更新计数器 */
         server.stat_expiredkeys++;
         return 1;
     } else {
-
-        // 键未过期
+        /* 键未过期 */ 
         return 0;
     }
 }
@@ -868,7 +864,7 @@ void activeExpireCycle(int type) {
         // 如果上次函数没有触发 timelimit_exit ，那么不执行处理
         if (!timelimit_exit) return;
         // 如果距离上次执行未够一定时间，那么不执行处理
-        if (start < last_fast_cycle + ACTIVE_EXPIRE_CYCLE_FAST_DURATION*2) return;
+        if (start < last_fast_cycle + ACTIVE_EXPIRE_CYCLE_FAST_DURATION * 2) return;
         // 运行到这里，说明执行快速处理，记录当前时间
         last_fast_cycle = start;
     }
@@ -993,13 +989,13 @@ void activeExpireCycle(int type) {
             // 我们不能用太长时间处理过期键，
             // 所以这个函数执行一定时间之后就要返回
 
-            // 更新遍历次数
+            /* 更新遍历次数 */ 
             iteration++;
 
             // 每遍历 16 次执行一次
             if ((iteration & 0xf) == 0 && /* check once every 16 iterations. */
-                (ustime() - start) > timelimit)
-            {
+                (ustime() - start) > timelimit
+            ) {
                 // 如果遍历次数正好是 16 的倍数
                 // 并且遍历的时间超过了 timelimit
                 // 那么断开 timelimit_exit

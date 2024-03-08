@@ -293,10 +293,10 @@ int dbDelete(redisDb *db, robj *key) {
     /* Deleting an entry from the expires dict will not free the sds of
      * the key, because it is shared with the main dictionary. */
     // 删除键的过期时间
-    if (dictSize(db->expires) > 0) dictDelete(db->expires,key->ptr);
+    if (dictSize(db->expires) > 0) dictDelete(db->expires, key->ptr);
 
     // 删除键值对
-    if (dictDelete(db->dict,key->ptr) == DICT_OK) {
+    if (dictDelete(db->dict, key->ptr) == DICT_OK) {
         // 如果开启了集群模式，那么从槽中删除给定的键
         if (server.cluster_enabled) slotToKeyDel(key);
         return 1;
@@ -1130,18 +1130,18 @@ long long getExpire(redisDb *db, robj *key) {
 void propagateExpire(redisDb *db, robj *key) {
     robj *argv[2];
 
-    // 构造一个 DEL key 命令
+    /* 构造一个 DEL key 命令 */
     argv[0] = shared.del;
     argv[1] = key;
     incrRefCount(argv[0]);
     incrRefCount(argv[1]);
 
-    // 传播到 AOF 
+    /* 传播到 AOF */
     if (server.aof_state != REDIS_AOF_OFF)
-        feedAppendOnlyFile(server.delCommand,db->id,argv,2);
+        feedAppendOnlyFile(server.delCommand, db->id, argv, 2);
 
-    // 传播到所有附属节点
-    replicationFeedSlaves(server.slaves,db->id,argv,2);
+    /* 传播到所有附属节点 */
+    replicationFeedSlaves(server.slaves, db->id, argv, 2);
 
     decrRefCount(argv[0]);
     decrRefCount(argv[1]);
@@ -1555,9 +1555,9 @@ void slotToKeyAdd(robj *key) {
 
 // 从槽中删除给定的键 key
 void slotToKeyDel(robj *key) {
-    unsigned int hashslot = keyHashSlot(key->ptr,sdslen(key->ptr));
+    unsigned int hashslot = keyHashSlot(key->ptr, sdslen(key->ptr));
 
-    zslDelete(server.cluster->slots_to_keys,hashslot,key);
+    zslDelete(server.cluster->slots_to_keys, hashslot, key);
 }
 
 // 清空节点所有槽保存的所有键
