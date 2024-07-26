@@ -1062,8 +1062,8 @@ static unsigned char *__ziplistDelete(unsigned char *zl, unsigned char *p, unsig
     return zl;
 }
 
-/* Insert item at "p". */
 /*
+ * Insert item at "p".
  * 根据指针 p 所指定的位置，将长度为 slen 的字符串 s 插入到 zl 中。
  *
  * 函数的返回值为完成插入操作之后的 ziplist
@@ -1155,19 +1155,19 @@ static unsigned char *__ziplistInsert(unsigned char *zl, unsigned char *p, unsig
         /* Subtract one because of the ZIP_END bytes */
         // 移动现有元素，为新元素的插入空间腾出位置
         // T = O(N)
-        memmove(p+reqlen,p-nextdiff,curlen-offset-1+nextdiff);
+        memmove(p + reqlen, p - nextdiff, curlen - offset - 1 + nextdiff);
 
         /* Encode this entry's raw length in the next entry. */
         // 将新节点的长度编码至后置节点
         // p+reqlen 定位到后置节点
         // reqlen 是新节点的长度
         // T = O(1)
-        zipPrevEncodeLength(p+reqlen,reqlen);
+        zipPrevEncodeLength(p + reqlen, reqlen);
 
         /* Update offset for tail */
         // 更新到达表尾的偏移量，将新节点的长度也算上
         ZIPLIST_TAIL_OFFSET(zl) =
-            intrev32ifbe(intrev32ifbe(ZIPLIST_TAIL_OFFSET(zl))+reqlen);
+            intrev32ifbe(intrev32ifbe(ZIPLIST_TAIL_OFFSET(zl)) + reqlen);
 
         /* When the tail contains more than one entry, we need to take
          * "nextdiff" in account as well. Otherwise, a change in the
@@ -1176,15 +1176,15 @@ static unsigned char *__ziplistInsert(unsigned char *zl, unsigned char *p, unsig
         // 那么程序需要将 nextdiff 记录的字节数也计算到表尾偏移量中
         // 这样才能让表尾偏移量正确对齐表尾节点
         // T = O(1)
-        tail = zipEntry(p+reqlen);
-        if (p[reqlen+tail.headersize+tail.len] != ZIP_END) {
+        tail = zipEntry(p + reqlen);
+        if (p[reqlen + tail.headersize + tail.len] != ZIP_END) {
             ZIPLIST_TAIL_OFFSET(zl) =
-                intrev32ifbe(intrev32ifbe(ZIPLIST_TAIL_OFFSET(zl))+nextdiff);
+                intrev32ifbe(intrev32ifbe(ZIPLIST_TAIL_OFFSET(zl)) + nextdiff);
         }
     } else {
         /* This element will be the new tail. */
         // 新元素是新的表尾节点
-        ZIPLIST_TAIL_OFFSET(zl) = intrev32ifbe(p-zl);
+        ZIPLIST_TAIL_OFFSET(zl) = intrev32ifbe(p - zl);
     }
 
     /* When nextdiff != 0, the raw length of the next entry has changed, so
@@ -1194,27 +1194,27 @@ static unsigned char *__ziplistInsert(unsigned char *zl, unsigned char *p, unsig
     if (nextdiff != 0) {
         offset = p-zl;
         // T  = O(N^2)
-        zl = __ziplistCascadeUpdate(zl,p+reqlen);
-        p = zl+offset;
+        zl = __ziplistCascadeUpdate(zl, p + reqlen);
+        p = zl + offset;
     }
 
     /* Write the entry */
     // 一切搞定，将前置节点的长度写入新节点的 header
-    p += zipPrevEncodeLength(p,prevlen);
+    p += zipPrevEncodeLength(p, prevlen);
     // 将节点值的长度写入新节点的 header
-    p += zipEncodeLength(p,encoding,slen);
+    p += zipEncodeLength(p, encoding, slen);
     // 写入节点值
     if (ZIP_IS_STR(encoding)) {
         // T = O(N)
-        memcpy(p,s,slen);
+        memcpy(p, s, slen);
     } else {
         // T = O(1)
-        zipSaveInteger(p,value,encoding);
+        zipSaveInteger(p, value, encoding);
     }
 
     // 更新列表的节点数量计数器
     // T = O(1)
-    ZIPLIST_INCR_LENGTH(zl,1);
+    ZIPLIST_INCR_LENGTH(zl, 1);
 
     return zl;
 }
@@ -1231,7 +1231,6 @@ static unsigned char *__ziplistInsert(unsigned char *zl, unsigned char *p, unsig
  * T = O(N^2)
  */
 unsigned char *ziplistPush(unsigned char *zl, unsigned char *s, unsigned int slen, int where) {
-
     // 根据 where 参数的值，决定将值推入到表头还是表尾
     unsigned char *p;
     p = (where == ZIPLIST_HEAD) ? ZIPLIST_ENTRY_HEAD(zl) : ZIPLIST_ENTRY_END(zl);
