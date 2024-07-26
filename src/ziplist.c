@@ -261,7 +261,6 @@
 
 /* 
 空白 ziplist 示例图
-
 area        |<---- ziplist header ---->|<-- end -->|
 
 size          4 bytes   4 bytes 2 bytes  1 byte
@@ -279,7 +278,6 @@ address                        ZIPLIST_ENTRY_TAIL
                                ZIPLIST_ENTRY_END
 
 非空 ziplist 示例图
-
 area        |<---- ziplist header ---->|<----------- entries ------------->|<-end->|
 
 size          4 bytes  4 bytes  2 bytes    ?        ?        ?        ?     1 byte
@@ -760,10 +758,9 @@ static zlentry zipEntry(unsigned char *p) {
  * T = O(1)
  */
 unsigned char *ziplistNew(void) {
-
     // ZIPLIST_HEADER_SIZE 是 ziplist 表头的大小
     // 1 字节是表末端 ZIP_END 的大小
-    unsigned int bytes = ZIPLIST_HEADER_SIZE+1;
+    unsigned int bytes = ZIPLIST_HEADER_SIZE + 1;
 
     // 为表头和表末端分配空间
     unsigned char *zl = zmalloc(bytes);
@@ -1241,7 +1238,7 @@ unsigned char *ziplistPush(unsigned char *zl, unsigned char *s, unsigned int sle
 
     // 返回添加新值后的 ziplist
     // T = O(N^2)
-    return __ziplistInsert(zl,p,s,slen);
+    return __ziplistInsert(zl, p, s, slen);
 }
 
 /* Returns an offset to use for iterating with ziplistNext. When the given
@@ -1259,14 +1256,12 @@ unsigned char *ziplistPush(unsigned char *zl, unsigned char *s, unsigned int sle
  * T = O(N)
  */
 unsigned char *ziplistIndex(unsigned char *zl, int index) {
-
     unsigned char *p;
 
     zlentry entry;
 
     // 处理负数索引
     if (index < 0) {
-
         // 将索引转换为正数
         index = (-index)-1;
         
@@ -1275,7 +1270,6 @@ unsigned char *ziplistIndex(unsigned char *zl, int index) {
 
         // 如果列表不为空，那么。。。
         if (p[0] != ZIP_END) {
-
             // 从表尾向表头遍历
             entry = zipEntry(p);
             // T = O(N)
@@ -1286,10 +1280,8 @@ unsigned char *ziplistIndex(unsigned char *zl, int index) {
                 entry = zipEntry(p);
             }
         }
-
     // 处理正数索引
     } else {
-
         // 定位到表头节点
         p = ZIPLIST_ENTRY_HEAD(zl);
 
@@ -1394,7 +1386,6 @@ unsigned char *ziplistPrev(unsigned char *zl, unsigned char *p) {
  * T = O(1)
  */
 unsigned int ziplistGet(unsigned char *p, unsigned char **sstr, unsigned int *slen, long long *sval) {
-
     zlentry entry;
     if (p == NULL || p[0] == ZIP_END) return 0;
     if (sstr) *sstr = NULL;

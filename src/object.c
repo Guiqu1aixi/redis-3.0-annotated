@@ -270,10 +270,12 @@ robj *createIntsetObject(void) {
  */
 robj *createHashObject(void) {
 
+    /* 创建并返回一个新的 ziplist */
     unsigned char *zl = ziplistNew();
 
     robj *o = createObject(REDIS_HASH, zl);
 
+    /* 编码设置为 ziplist */
     o->encoding = REDIS_ENCODING_ZIPLIST;
 
     return o;

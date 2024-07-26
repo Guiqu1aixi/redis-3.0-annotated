@@ -53,8 +53,6 @@ robj *lookupKey(redisDb *db, robj *key) {
 
     // 节点存在
     if (de) {
-        
-
         // 取出值
         robj *val = dictGetVal(de);
 
@@ -68,9 +66,7 @@ robj *lookupKey(redisDb *db, robj *key) {
         // 返回值
         return val;
     } else {
-
         // 节点不存在
-
         return NULL;
     }
 }

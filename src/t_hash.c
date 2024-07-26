@@ -601,14 +601,12 @@ robj *hashTypeCurrentObject(hashTypeIterator *hi, int what) {
  * 如果对象不存在，那么创建一个新哈希对象并返回。
  */
 robj *hashTypeLookupWriteOrCreate(redisClient *c, robj *key) {
-
-    robj *o = lookupKeyWrite(c->db,key);
+    robj *o = lookupKeyWrite(c->db, key);
 
     // 对象不存在，创建新的
     if (o == NULL) {
         o = createHashObject();
         dbAdd(c->db,key,o);
-
     // 对象存在，检查类型
     } else {
         if (o->type != REDIS_HASH) {
@@ -707,25 +705,25 @@ void hsetCommand(redisClient *c) {
     robj *o;
 
     // 取出或新创建哈希对象
-    if ((o = hashTypeLookupWriteOrCreate(c,c->argv[1])) == NULL) return;
+    if ((o = hashTypeLookupWriteOrCreate(c, c->argv[1])) == NULL) return;
 
     // 如果需要的话，转换哈希对象的编码
-    hashTypeTryConversion(o,c->argv,2,3);
+    hashTypeTryConversion(o, c->argv, 2, 3);
 
     // 编码 field 和 value 对象以节约空间
-    hashTypeTryObjectEncoding(o,&c->argv[2], &c->argv[3]);
+    hashTypeTryObjectEncoding(o, &c->argv[2], &c->argv[3]);
 
     // 设置 field 和 value 到 hash
-    update = hashTypeSet(o,c->argv[2],c->argv[3]);
+    update = hashTypeSet(o, c->argv[2], c->argv[3]);
 
     // 返回状态：显示 field-value 对是新添加还是更新
     addReply(c, update ? shared.czero : shared.cone);
 
     // 发送键修改信号
-    signalModifiedKey(c->db,c->argv[1]);
+    signalModifiedKey(c->db, c->argv[1]);
 
     // 发送事件通知
-    notifyKeyspaceEvent(REDIS_NOTIFY_HASH,"hset",c->argv[1],c->db->id);
+    notifyKeyspaceEvent(REDIS_NOTIFY_HASH, "hset", c->argv[1], c->db->id);
 
     // 将服务器设为脏
     server.dirty++;
@@ -944,7 +942,6 @@ static void addHashFieldToReply(redisClient *c, robj *o, robj *field) {
                 addReplyBulkLongLong(c, vll);
             }
         }
-
     // 字典
     } else if (o->encoding == REDIS_ENCODING_HT) {
         robj *value;
