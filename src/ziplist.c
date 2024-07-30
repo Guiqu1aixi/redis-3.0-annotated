@@ -785,9 +785,8 @@ unsigned char *ziplistNew(void) {
  * T = O(N)
  */
 static unsigned char *ziplistResize(unsigned char *zl, unsigned int len) {
-
     // 用 zrealloc ，扩展时不改变现有元素
-    zl = zrealloc(zl,len);
+    zl = zrealloc(zl, len);
 
     // 更新 bytes 属性
     ZIPLIST_BYTES(zl) = intrev32ifbe(len);
@@ -1110,7 +1109,7 @@ static unsigned char *__ziplistInsert(unsigned char *zl, unsigned char *p, unsig
     // 2)encoding 则保存适用于 value 的编码方式
     // 无论使用什么编码， reqlen 都保存节点值的长度
     // T = O(N)
-    if (zipTryEncoding(s,slen,&value,&encoding)) {
+    if (zipTryEncoding(s, slen, &value, &encoding)) {
         /* 'encoding' is set to the appropriate integer encoding */
         reqlen = zipIntSize(encoding);
     } else {
@@ -1122,10 +1121,10 @@ static unsigned char *__ziplistInsert(unsigned char *zl, unsigned char *p, unsig
      * the length of the payload. */
     // 计算编码前置节点的长度所需的大小
     // T = O(1)
-    reqlen += zipPrevEncodeLength(NULL,prevlen);
+    reqlen += zipPrevEncodeLength(NULL, prevlen);
     // 计算编码当前节点值所需的大小
     // T = O(1)
-    reqlen += zipEncodeLength(NULL,encoding,slen);
+    reqlen += zipEncodeLength(NULL, encoding, slen);
 
     /* When the insert position is not equal to the tail, we need to
      * make sure that the next entry can hold this entry's length in
@@ -1135,18 +1134,18 @@ static unsigned char *__ziplistInsert(unsigned char *zl, unsigned char *p, unsig
     // nextdiff 保存了新旧编码之间的字节大小差，如果这个值大于 0 
     // 那么说明需要对 p 所指向的节点（的 header ）进行扩展
     // T = O(1)
-    nextdiff = (p[0] != ZIP_END) ? zipPrevLenByteDiff(p,reqlen) : 0;
+    nextdiff = (p[0] != ZIP_END) ? zipPrevLenByteDiff(p, reqlen) : 0;
 
     /* Store offset because a realloc may change the address of zl. */
     // 因为重分配空间可能会改变 zl 的地址
     // 所以在分配之前，需要记录 zl 到 p 的偏移量，然后在分配之后依靠偏移量还原 p 
-    offset = p-zl;
+    offset = p - zl;
     // curlen 是 ziplist 原来的长度
     // reqlen 是整个新节点的长度
     // nextdiff 是新节点的后继节点扩展 header 的长度（要么 0 字节，要么 4 个字节）
     // T = O(N)
-    zl = ziplistResize(zl,curlen+reqlen+nextdiff);
-    p = zl+offset;
+    zl = ziplistResize(zl, curlen + reqlen + nextdiff);
+    p = zl + offset;
 
     /* Apply memory move when necessary and update tail offset. */
     if (p[0] != ZIP_END) {
@@ -1192,7 +1191,7 @@ static unsigned char *__ziplistInsert(unsigned char *zl, unsigned char *p, unsig
     // 当 nextdiff != 0 时，新节点的后继节点的（header 部分）长度已经被改变，
     // 所以需要级联地更新后续的节点
     if (nextdiff != 0) {
-        offset = p-zl;
+        offset = p - zl;
         // T  = O(N^2)
         zl = __ziplistCascadeUpdate(zl, p + reqlen);
         p = zl + offset;

@@ -305,10 +305,8 @@ int hashTypeSet(robj *o, robj *field, robj *value) {
         // 检查在添加操作完成之后，是否需要将 ZIPLIST 编码转换成 HT 编码
         if (hashTypeLength(o) > server.hash_max_ziplist_entries)
             hashTypeConvert(o, REDIS_ENCODING_HT);
-
     // 添加到字典
     } else if (o->encoding == REDIS_ENCODING_HT) {
-
         // 添加或替换键值对到字典
         // 添加返回 1 ，替换返回 0
         if (dictReplace(o->ptr, field, value)) { /* Insert */
