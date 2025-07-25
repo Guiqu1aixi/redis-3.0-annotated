@@ -498,6 +498,8 @@ static void *getMcontextEip(ucontext_t *uc) {
     return (void*) uc->uc_mcontext->__ss.__rip;
     #elif defined(__i386__)
     return (void*) uc->uc_mcontext->__ss.__eip;
+    #elif defined(__arm64__)
+    return (void*) uc->uc_mcontext->__ss.__pc;
     #else
     return (void*) uc->uc_mcontext->__ss.__srr0;
     #endif
@@ -505,6 +507,8 @@ static void *getMcontextEip(ucontext_t *uc) {
     /* OSX >= 10.6 */
     #if defined(_STRUCT_X86_THREAD_STATE64) && !defined(__i386__)
     return (void*) uc->uc_mcontext->__ss.__rip;
+    #elif defined(__arm64__)
+    return (void*) uc->uc_mcontext->__ss.__pc;
     #else
     return (void*) uc->uc_mcontext->__ss.__eip;
     #endif
@@ -572,6 +576,54 @@ void logRegisters(ucontext_t *uc) {
         (unsigned long) uc->uc_mcontext->__ss.__gs
     );
     logStackContent((void**)uc->uc_mcontext->__ss.__rsp);
+    #elif defined(__arm64__)
+    /* OSX ARM64 */
+    redisLog(REDIS_WARNING,
+    "\n"
+    "X0 :%016lx X1 :%016lx\nX2 :%016lx X3 :%016lx\n"
+    "X4 :%016lx X5 :%016lx\nX6 :%016lx X7 :%016lx\n"
+    "X8 :%016lx X9 :%016lx\nX10:%016lx X11:%016lx\n"
+    "X12:%016lx X13:%016lx\nX14:%016lx X15:%016lx\n"
+    "X16:%016lx X17:%016lx\nX18:%016lx X19:%016lx\n"
+    "X20:%016lx X21:%016lx\nX22:%016lx X23:%016lx\n"
+    "X24:%016lx X25:%016lx\nX26:%016lx X27:%016lx\n"
+    "X28:%016lx FP :%016lx\nLR :%016lx SP :%016lx\n"
+    "PC :%016lx",
+        (unsigned long) uc->uc_mcontext->__ss.__x[0],
+        (unsigned long) uc->uc_mcontext->__ss.__x[1],
+        (unsigned long) uc->uc_mcontext->__ss.__x[2],
+        (unsigned long) uc->uc_mcontext->__ss.__x[3],
+        (unsigned long) uc->uc_mcontext->__ss.__x[4],
+        (unsigned long) uc->uc_mcontext->__ss.__x[5],
+        (unsigned long) uc->uc_mcontext->__ss.__x[6],
+        (unsigned long) uc->uc_mcontext->__ss.__x[7],
+        (unsigned long) uc->uc_mcontext->__ss.__x[8],
+        (unsigned long) uc->uc_mcontext->__ss.__x[9],
+        (unsigned long) uc->uc_mcontext->__ss.__x[10],
+        (unsigned long) uc->uc_mcontext->__ss.__x[11],
+        (unsigned long) uc->uc_mcontext->__ss.__x[12],
+        (unsigned long) uc->uc_mcontext->__ss.__x[13],
+        (unsigned long) uc->uc_mcontext->__ss.__x[14],
+        (unsigned long) uc->uc_mcontext->__ss.__x[15],
+        (unsigned long) uc->uc_mcontext->__ss.__x[16],
+        (unsigned long) uc->uc_mcontext->__ss.__x[17],
+        (unsigned long) uc->uc_mcontext->__ss.__x[18],
+        (unsigned long) uc->uc_mcontext->__ss.__x[19],
+        (unsigned long) uc->uc_mcontext->__ss.__x[20],
+        (unsigned long) uc->uc_mcontext->__ss.__x[21],
+        (unsigned long) uc->uc_mcontext->__ss.__x[22],
+        (unsigned long) uc->uc_mcontext->__ss.__x[23],
+        (unsigned long) uc->uc_mcontext->__ss.__x[24],
+        (unsigned long) uc->uc_mcontext->__ss.__x[25],
+        (unsigned long) uc->uc_mcontext->__ss.__x[26],
+        (unsigned long) uc->uc_mcontext->__ss.__x[27],
+        (unsigned long) uc->uc_mcontext->__ss.__x[28],
+        (unsigned long) uc->uc_mcontext->__ss.__fp,
+        (unsigned long) uc->uc_mcontext->__ss.__lr,
+        (unsigned long) uc->uc_mcontext->__ss.__sp,
+        (unsigned long) uc->uc_mcontext->__ss.__pc
+    );
+    logStackContent((void**)uc->uc_mcontext->__ss.__sp);
     #else
     /* OSX x86 */
     redisLog(REDIS_WARNING,

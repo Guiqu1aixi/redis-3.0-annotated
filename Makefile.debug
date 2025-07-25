@@ -1,0 +1,63 @@
+# Redis调试专用Makefile
+
+# 包含原始Makefile
+include Makefile
+
+# 调试编译选项
+DEBUG_CFLAGS = -g -O0 -DDEBUG -Wall -Wextra
+DEBUG_LDFLAGS = -g
+
+# 调试目标
+debug: clean
+	@echo "编译调试版本Redis..."
+	cd src && $(MAKE) CFLAGS="$(DEBUG_CFLAGS)" LDFLAGS="$(DEBUG_LDFLAGS)" all
+	@echo "生成调试符号..."
+	dsymutil src/redis-server
+	dsymutil src/redis-cli
+	@echo "调试版本编译完成!"
+
+# 运行调试服务器
+debug-server: debug
+	@echo "启动调试模式Redis服务器..."
+	./src/redis-server redis.conf
+
+# 使用LLDB调试
+lldb-debug: debug
+	@echo "启动LLDB调试..."
+	lldb src/redis-server -- redis.conf
+
+# 内存检查 (如果安装了valgrind)
+valgrind-debug: debug
+	@echo "使用Valgrind进行内存检查..."
+	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all ./src/redis-server redis.conf
+
+# 性能分析 (使用instruments)
+profile: debug
+	@echo "启动性能分析..."
+	instruments -t "Time Profiler" ./src/redis-server redis.conf
+
+# 测试调试版本
+test-debug: debug
+	@echo "运行测试套件..."
+	cd src && $(MAKE) test
+
+# 清理调试文件
+clean-debug:
+	@echo "清理调试文件..."
+	rm -rf src/*.dSYM
+	rm -f src/*.o
+	rm -f test_client
+	cd src && $(MAKE) clean
+
+# 帮助信息
+help-debug:
+	@echo "Redis调试Makefile帮助:"
+	@echo "  debug         - 编译调试版本"
+	@echo "  debug-server  - 启动调试服务器"
+	@echo "  lldb-debug    - 使用LLDB调试"
+	@echo "  valgrind-debug- 使用Valgrind内存检查"
+	@echo "  profile       - 性能分析"
+	@echo "  test-debug    - 运行测试"
+	@echo "  clean-debug   - 清理调试文件"
+
+.PHONY: debug debug-server lldb-debug valgrind-debug profile test-debug clean-debug help-debug

@@ -1,5 +1,54 @@
 {
     "files.associations": {
-        "zmalloc.h": "c"
-    }
+        "zmalloc.h": "c",
+        "*.h": "c"
+    },
+    
+    // C/C++ 配置
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/deps/hiredis",
+        "${workspaceFolder}/deps/linenoise",
+        "${workspaceFolder}/deps/lua/src"
+    ],
+    "C_Cpp.default.defines": [
+        "__APPLE__",
+        "__arm64__"
+    ],
+    "C_Cpp.default.compilerPath": "/usr/bin/clang",
+    "C_Cpp.default.cStandard": "c99",
+    "C_Cpp.default.intelliSenseMode": "macos-clang-arm64",
+    
+    // 编辑器外观设置
+    "editor.lineHeight": 1.6,
+    "editor.fontSize": 14,
+    "editor.fontFamily": "'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Consolas', monospace",
+    "editor.fontLigatures": true,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.renderWhitespace": "boundary",
+    "editor.rulers": [80, 120],
+    
+    // 代码格式化
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "editor.formatOnPaste": true,
+    
+    // 括号和缩进
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": true,
+    "editor.guides.indentation": true,
+    
+    // 文件和工作区
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    
+    // 终端设置
+    "terminal.integrated.fontSize": 13,
+    "terminal.integrated.lineHeight": 1.4,
+    
+    // 调试设置
+    "debug.console.fontSize": 13,
+    "debug.console.lineHeight": 1.4
 }

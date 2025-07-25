@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Redis Server (LLDB)",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/redis-server",
+            "args": [
+                "${workspaceFolder}/redis.conf"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "build-redis-debug"
+        },
+        {
+            "name": "Debug Redis Server (No Config)",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/redis-server",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "build-redis-debug"
+        },
+        {
+            "name": "Debug Redis Server (Native)",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "lldb ${workspaceFolder}/src/redis-server -- ${workspaceFolder}/redis.conf",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
